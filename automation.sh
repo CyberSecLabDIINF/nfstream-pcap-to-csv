@@ -87,20 +87,20 @@ action() {
     pcaps_folder=$2
     echo "Processing file: $file"
     
-    # Extrae la ruta relativa completa a partir de pcaps_folder
-    relative_path="${file#$pcaps_folder/}"
+    # Remove /mnt prefix from the file path for the target directory
+    relative_path="${file#*/mnt/}"
     relative_dir=$(dirname "$relative_path")
     name=$(basename "$file" .pcap)
 
-    # Construye la estructura completa en CSVs, comenzando con el directorio final de pcaps_folder
-    target_dir="$csvs_folder/$(basename "$pcaps_folder")/$relative_dir"
+    # Build the target directory path omitting /mnt
+    target_dir="$csvs_folder/$relative_dir"
     mkdir -p "$target_dir" || show_error "Failed to create directory structure in CSVs"
 
-    # Procesa el archivo y genera el CSV en la estructura de subcarpetas
+    # Process the file and generate the CSV in the appropriate subfolder structure
     if [ "$(basename "$(pwd)")" = "NFSTREAM_pre-processing" ]; then
         python3 nfs-preprocesser.py -i "$file" -o "$target_dir/$name.csv"
     else
-        python3 investigation-utilities/NFSTREAM_pre-processing/nfs-preprocesser.py -i "$file" -o "$target_dir/$name.csv"
+        python3 nfs-preprocesser.py -i "$file" -o "$target_dir/$name.csv"
     fi
 }
 
@@ -113,7 +113,7 @@ fi
 
 # Default values
 pcaps_folder="PCAPs"
-csvs_folder="/mnt/s/Programacion/Investigacion-Redes/investigation-utilities/NFSTREAM_pre-processing/CSVs"
+csvs_folder="/mnt/p/Programacion/USACH/Investigacion-Redes/nfstream-pcap-to-csv/CSVs"
 install_deps=false
 file_extension=".pcap"
 
