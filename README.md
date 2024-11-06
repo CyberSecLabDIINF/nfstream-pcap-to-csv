@@ -7,8 +7,8 @@ Este proyecto automatiza el procesamiento y etiquetado de archivos PCAP de Bot-I
 1. Clona este repositorio e ingresa a la carpeta del preprocesador:
 
    ```bash
-   git clone https://github.com/CyberSecLabDIINF/investigation-utilities.git
-   cd investigation-utilities/NFSTREAM_pre-processing
+   git clone https://github.com/CyberSecLabDIINF/nfstream-pcap-to-csv.git
+   cd nfstream-pcap-to-csv
    ```
 
 2. Verifica que tengas instalado python, pip y virtualenv:
