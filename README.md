@@ -67,6 +67,12 @@ El proyecto incluye dos scripts principales:
 
 El procesamiento de archivos genera logs detallados en la terminal. En caso de errores, el sistema notifica el tipo de error específico (por ejemplo, `Archivo no encontrado` o `Permiso denegado`).
 
+En caso de errores desconocidos con caracteres extraños, aplicar el siguiente comando en el directorio donde esté automation.sh:
+
+```bash
+  sed -i 's/\r//' automation.sh
+```
+
 ## Créditos
 
 Estos scripts fue desarrollado por [Andrés Zelaya](https://github.com/Opsord) para facilitar el análisis de tráfico de red en el contexto de Bot-IoT.
