@@ -4,7 +4,7 @@
 
 # Definir variables de ruta configurables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # Directorio donde se encuentra el script
-VENV_DIR="$SCRIPT_DIR/venv"                                 # Ruta al entorno virtual
+VENV_DIR="$SCRIPT_DIR/.venv"                                # Ruta al entorno virtual
 PCAPS_FOLDER_DEFAULT="$SCRIPT_DI/PCAPs"                     # Carpeta predeterminada de archivos PCAP
 CSVS_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs"                      # Carpeta predeterminada para archivos CSV
 
