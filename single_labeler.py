@@ -1,181 +1,183 @@
-import os
 import pandas as pd
 import argparse
 import logging
+from typing import Optional, List, Dict
+from pathlib import Path
 
 
-def setup_logging():
+def setup_logging(debug: bool = False) -> logging.Logger:
     """Configura el sistema de logging básico."""
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if debug else logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     return logging.getLogger(__name__)
 
 
-def get_label_list(labels_dir, logger):
-    """
-    Obtiene el listado de etiquetas disponibles en el directorio.
-
-    Args:
-        labels_dir: Ruta del directorio de etiquetas.
-        logger: Logger para registrar eventos.
-
-    Returns:
-        Lista de nombres de etiquetas (archivos sin extensión).
-    """
-    labels_dir = os.path.abspath(labels_dir)
-    if not os.path.exists(labels_dir):
+def get_label_list(labels_dir: Path, logger: logging.Logger) -> List[str]:
+    """Obtiene el listado de etiquetas disponibles en el directorio."""
+    if not labels_dir.exists():
         logger.error(f"El directorio de etiquetas no existe: {labels_dir}")
         return []
 
-    label_files = [f for f in os.listdir(labels_dir) if f.endswith('.csv')]
-    label_names = [os.path.splitext(f)[0] for f in label_files]
-    logger.info(f"Etiquetas disponibles: {label_names}")
-    return label_names
+    return [f.stem for f in labels_dir.glob("*.csv")]
 
 
-def determine_label(file_name, label_list, logger):
-    """
-    Determina la etiqueta que corresponde al archivo de datos en base al nombre.
-
-    Args:
-        file_name: Nombre del archivo de datos.
-        label_list: Lista de etiquetas disponibles.
-        logger: Logger para registrar eventos.
-
-    Returns:
-        Nombre de la etiqueta encontrada o None si no hay coincidencia.
-    """
+def determine_label(file_name: str, label_list: List[str], logger: logging.Logger) -> Optional[str]:
+    """Determina la etiqueta que corresponde al archivo de datos."""
     matching_labels = [label for label in label_list if label in file_name]
+
     if not matching_labels:
         logger.warning(f"No se encontró una etiqueta para el archivo: {file_name}")
         return None
+
     if len(matching_labels) > 1:
         logger.warning(f"Se encontraron múltiples etiquetas para {file_name}: {matching_labels}")
-    logger.info(f"Etiqueta seleccionada: {matching_labels[0]}")
+
     return matching_labels[0]
 
 
-def load_label_file(label_dir, label_name, logger):
+def load_label_file(label_path: Path, logger: logging.Logger) -> Optional[Dict]:
     """
-    Carga el archivo de etiquetas correspondiente.
-
-    Args:
-        label_dir: Directorio de etiquetas.
-        label_name: Nombre de la etiqueta a cargar.
-        logger: Logger para registrar eventos.
-
-    Returns:
-        DataFrame con las etiquetas o None si ocurre un error.
+    Carga y preprocesa el archivo de etiquetas para optimizar búsquedas posteriores.
     """
-    label_file = os.path.abspath(os.path.join(label_dir, f"{label_name}.csv"))
-    if not os.path.exists(label_file):
-        logger.error(f"El archivo de etiquetas no existe: {label_file}")
+    if not label_path.exists():
+        logger.error(f"El archivo de etiquetas no existe: {label_path}")
         return None
 
     try:
-        label_df = pd.read_csv(label_file, sep=";")
-        logger.info(f"Archivo de etiquetas cargado: {label_file}")
-        return label_df
+        label_dict = {}
+        chunks = pd.read_csv(
+            label_path,
+            sep=";",
+            chunksize=10000,
+            usecols=['saddr', 'daddr', 'attack', 'category', 'subcategory']
+        )
+
+        for chunk in chunks:
+            for _, row in chunk.iterrows():
+                key = (
+                    str(row['saddr']).strip('"'),
+                    str(row['daddr']).strip('"')
+                )
+                label_dict[key] = {
+                    'attack': row['attack'],
+                    'category': row['category'],
+                    'subcategory': row['subcategory']
+                }
+
+        logger.info(f"Archivo de etiquetas cargado: {label_path}")
+        return label_dict
     except Exception as e:
-        logger.error(f"Error al cargar el archivo de etiquetas {label_file}: {str(e)}")
+        logger.error(f"Error al cargar el archivo de etiquetas {label_path}: {str(e)}")
         return None
 
 
-def process_file(data_file, label_df, logger):
-    """
-    Procesa un archivo de datos usando las etiquetas proporcionadas.
+def get_column_dtypes() -> Dict:
+    """Define los tipos de datos para las columnas problemáticas."""
+    return {
+        'src_ip': str,
+        'dst_ip': str,
+        # Columnas problemáticas (82-85)
+        'src_tcp_flags_ack': str,
+        'src_tcp_flags_push': str,
+        'src_tcp_flags_reset': str,
+        'src_tcp_flags_syn': str,
+        'src_tcp_flags_fin': str,
+        'dst_tcp_flags_ack': str,
+        'dst_tcp_flags_push': str,
+        'dst_tcp_flags_reset': str,
+        'dst_tcp_flags_syn': str,
+        'dst_tcp_flags_fin': str
+    }
 
-    Args:
-        data_file: Ruta del archivo de datos.
-        label_df: DataFrame con las etiquetas.
-        logger: Logger para registrar eventos.
 
-    Returns:
-        DataFrame procesado con las etiquetas añadidas.
-    """
-    data_file = os.path.abspath(data_file)
-    if not os.path.exists(data_file):
-        logger.error(f"El archivo de datos no existe: {data_file}")
+def process_file(data_path: Path, label_dict: Dict, logger: logging.Logger) -> Optional[pd.DataFrame]:
+    """Procesa un archivo de datos usando el diccionario de etiquetas."""
+    if not data_path.exists():
+        logger.error(f"El archivo de datos no existe: {data_path}")
         return None
 
     try:
-        # Cargar el archivo de datos
-        data_df = pd.read_csv(data_file, sep=",")  # Cambié el separador a coma
-        logger.info(f"Archivo de datos cargado: {data_file}")
+        # Definir tipos de datos específicos para evitar warnings
+        dtype_dict = get_column_dtypes()
 
-        # Agregar columnas de etiquetas por defecto
-        data_df["attack"] = "Unclear"
-        data_df["category"] = "Unclear"
-        data_df["subcategory"] = "Unclear"
+        chunks = []
+        chunk_iterator = pd.read_csv(
+            data_path,
+            sep=",",
+            chunksize=10000,
+            dtype=dtype_dict,
+            low_memory=False  # Previene warnings de tipos mixtos
+        )
 
-        # Limpiar las IP y realizar comparaciones robustas
-        label_df["saddr"] = label_df["saddr"].astype(str).str.strip('"')
-        label_df["daddr"] = label_df["daddr"].astype(str).str.strip('"')
+        for chunk in chunk_iterator:
+            # Preparar columnas de etiquetas
+            chunk['attack'] = 'Unclear'
+            chunk['category'] = 'Unclear'
+            chunk['subcategory'] = 'Unclear'
 
-        data_df["src_ip"] = data_df["src_ip"].astype(str).str.strip('"')
-        data_df["dst_ip"] = data_df["dst_ip"].astype(str).str.strip('"')
+            # Limpiar IPs
+            chunk['src_ip'] = chunk['src_ip'].str.strip('"')
+            chunk['dst_ip'] = chunk['dst_ip'].str.strip('"')
 
-        # Recorrer el archivo de datos y etiquetar
-        for idx, row in data_df.iterrows():
-            src_ip = row.get("src_ip")
-            dst_ip = row.get("dst_ip")
+            # Vectorizar la búsqueda de etiquetas
+            for idx, row in chunk.iterrows():
+                if pd.isna(row['src_ip']) or pd.isna(row['dst_ip']):
+                    continue
 
-            # Evitar procesamiento de filas con IPs faltantes
-            if pd.isna(src_ip) or pd.isna(dst_ip):
-                continue
+                key = (row['src_ip'], row['dst_ip'])
+                if key in label_dict:
+                    labels = label_dict[key]
+                    chunk.at[idx, 'attack'] = labels['attack']
+                    chunk.at[idx, 'category'] = labels['category']
+                    chunk.at[idx, 'subcategory'] = labels['subcategory']
 
-            # Buscar coincidencias con el archivo de etiquetas
-            for _, label_row in label_df.iterrows():
-                if src_ip == label_row["saddr"] and dst_ip == label_row["daddr"]:
-                    data_df.at[idx, "attack"] = label_row["attack"]
-                    data_df.at[idx, "category"] = label_row["category"]
-                    data_df.at[idx, "subcategory"] = label_row["subcategory"]
-                    break
+            chunks.append(chunk)
 
-        logger.info(f"Archivo procesado exitosamente: {data_file}")
-        return data_df
+        result = pd.concat(chunks, ignore_index=True)
+        logger.info(f"Archivo procesado exitosamente: {data_path}")
+        return result
+
     except Exception as e:
-        logger.error(f"Error al procesar el archivo {data_file}: {str(e)}")
+        logger.error(f"Error al procesar el archivo {data_path}: {str(e)}")
         return None
 
 
-def save_csv(df, output_file, logger):
-    """
-    Guarda un DataFrame en un archivo CSV.
-
-    Args:
-        df: DataFrame a guardar.
-        output_file: Ruta del archivo de salida.
-        logger: Logger para registrar eventos.
-    """
+def save_csv(df: pd.DataFrame, output_path: Path, logger: logging.Logger) -> None:
+    """Guarda un DataFrame en un archivo CSV."""
     try:
-        df.to_csv(output_file, sep=";", index=False)
-        logger.info(f"Archivo procesado guardado en: {output_file}")
+        # Crear directorio si no existe
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Usar compression si el archivo es grande
+        if len(df) > 100000:
+            output_path = output_path.with_suffix('.csv.gz')
+            df.to_csv(output_path, sep=";", index=False, compression='gzip')
+        else:
+            df.to_csv(output_path, sep=";", index=False)
+
+        logger.info(f"Archivo procesado guardado en: {output_path}")
     except Exception as e:
-        logger.error(f"Error al guardar el archivo {output_file}: {str(e)}")
+        logger.error(f"Error al guardar el archivo {output_path}: {str(e)}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Etiquetador individual de archivos CSV")
+    parser = argparse.ArgumentParser(description="Etiquetador optimizado de archivos CSV")
     parser.add_argument("--data-file", required=True, help="Archivo de datos a procesar (CSV)")
     parser.add_argument("--labels-dir", required=True, help="Directorio de etiquetas")
     parser.add_argument("--output-file", required=True, help="Archivo de salida procesado (CSV)")
     parser.add_argument("--debug", action="store_true", help="Activa el modo debug")
     args = parser.parse_args()
 
-    logger = setup_logging()
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
+    # Usar Path para manejo más seguro de rutas
+    labels_dir = Path(args.labels_dir).resolve()
+    data_path = Path(args.data_file).resolve()
+    output_path = Path(args.output_file).resolve()
 
-    # Obtener lista de etiquetas disponibles
-    labels_dir = os.path.abspath(args.labels_dir)
-    data_file = os.path.abspath(args.data_file)
-    output_file = os.path.abspath(args.output_file)
-
-    logger.info(f"Archivo de datos: {data_file}")
+    logger = setup_logging(args.debug)
+    logger.info(f"Archivo de datos: {data_path}")
     logger.info(f"Directorio de etiquetas: {labels_dir}")
 
     label_list = get_label_list(labels_dir, logger)
@@ -183,23 +185,19 @@ def main():
         logger.error("No hay etiquetas disponibles para procesar.")
         return
 
-    # Determinar etiqueta correspondiente
-    file_name = os.path.basename(data_file)
-    label_name = determine_label(file_name, label_list, logger)
+    label_name = determine_label(data_path.name, label_list, logger)
     if not label_name:
         logger.error("No se pudo determinar la etiqueta para el archivo.")
         return
 
-    # Cargar archivo de etiquetas
-    label_df = load_label_file(labels_dir, label_name, logger)
-    if label_df is None:
+    label_dict = load_label_file(labels_dir / f"{label_name}.csv", logger)
+    if label_dict is None:
         logger.error("No se pudo cargar el archivo de etiquetas.")
         return
 
-    # Procesar el archivo
-    processed_df = process_file(data_file, label_df, logger)
+    processed_df = process_file(data_path, label_dict, logger)
     if processed_df is not None:
-        save_csv(processed_df, output_file, logger)
+        save_csv(processed_df, output_path, logger)
     else:
         logger.error("Error al procesar el archivo de datos.")
 
