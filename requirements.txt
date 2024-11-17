@@ -1,3 +1,6 @@
 nfstream
 argparse
 pandas
+typing
+pathlib
+charset_normalizer

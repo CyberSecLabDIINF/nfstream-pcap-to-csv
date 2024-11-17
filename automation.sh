@@ -3,10 +3,11 @@
 # Uso individual: bash automation.sh -p (path to PCAPs folder) -d
 
 # Definir variables de ruta configurables
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # Directorio donde se encuentra el script
-VENV_DIR="$SCRIPT_DIR/.venv"                                # Ruta al entorno virtual
-PCAPS_FOLDER_DEFAULT="$SCRIPT_DI/PCAPs"                     # Carpeta predeterminada de archivos PCAP
-CSVS_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs"                      # Carpeta predeterminada para archivos CSV
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"      # Directorio donde se encuentra el script
+VENV_DIR="$SCRIPT_DIR/.venv"                                    # Ruta al entorno virtual
+PCAPS_FOLDER_DEFAULT="$SCRIPT_DIR/PCAPs"                         # Carpeta predeterminada de archivos PCAP
+CSVS_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs"                          # Carpeta predeterminada para archivos CSV
+LABELING_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs/Labeling/Bot-IoT"     # Carpeta predeterminada para archivos etiquetados
 
 # Function to show help
 show_help() {
@@ -33,7 +34,7 @@ activate_virtual_environment() {
         show_error "Virtual environment directory not found"
     fi
     # Activar el entorno virtual
-    source "$VENV_DIR/bin/activate" || show_error "Failed to activate virtual environment"
+    source "$VENV_DIR/Scripts/activate" || show_error "Failed to activate virtual environment"
     # Verificar si el entorno virtual fue activado
     if [ -n "$VIRTUAL_ENV" ]; then
         echo "Virtual environment activated: $VIRTUAL_ENV"
@@ -69,7 +70,7 @@ action() {
     local file="$1"                    # Archivo actual a procesar
     local pcaps_folder="$2"             # Carpeta donde se encuentran los archivos PCAP
     echo "Processing file: $file"
-    
+
     # Eliminar el prefijo /mnt de la ruta del archivo para la ruta de destino
     relative_path="${file#*/mnt/}"
     relative_dir=$(dirname "$relative_path")
@@ -81,6 +82,13 @@ action() {
 
     # Procesar el archivo y generar el CSV en la subcarpeta apropiada
     python3 "$SCRIPT_DIR/nfs-preprocesser.py" -i "$file" -o "$target_dir/$name.csv"
+    echo "File processed: $target_dir/$name.csv"
+
+    # Etiquetar el archivo PCAP procesado
+    echo "Labeling file: $file"
+    base_name=$(basename "$file" .pcap)
+    labeled_file="${target_dir}/${base_name}_labeled.csv"
+    python3 "$SCRIPT_DIR/single_labeler.py" --data-file "$target_dir/$name.csv" --labels-dir "$LABELING_FOLDER_DEFAULT" --output-file "$labeled_file" --debug
 }
 
 # -------------------------------------- SCRIPT --------------------------------------

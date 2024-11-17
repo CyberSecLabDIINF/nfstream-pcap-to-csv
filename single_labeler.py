@@ -1,9 +1,12 @@
 import pandas as pd
 import argparse
 import logging
+from charset_normalizer import detect
 from typing import Optional, List, Dict
 from pathlib import Path
 
+# Uso de ejemplo:
+# python single_labeler.py --data-file ".\CSVs\Bot-IoT\Scan\OS\4\IoT_Dataset_OSScan__00001_20180522190501.csv" --labels-dir ".\CSVs\Labeling\Bot-IoT\" --output-file ".\CSVs\Labeling\Results\osscan_test.csv"
 
 def setup_logging(debug: bool = False) -> logging.Logger:
     """Configura el sistema de logging básico."""
@@ -24,8 +27,26 @@ def get_label_list(labels_dir: Path, logger: logging.Logger) -> List[str]:
     return [f.stem for f in labels_dir.glob("*.csv")]
 
 
+def get_label_exceptions() -> Dict[str, str]:
+    """Define excepciones para nombres de archivos específicos y sus etiquetas."""
+    return {
+        "data_theft": "Data_exfiltration",
+        # Agrega más casos según sea necesario
+    }
+
+
 def determine_label(file_name: str, label_list: List[str], logger: logging.Logger) -> Optional[str]:
-    """Determina la etiqueta que corresponde al archivo de datos."""
+    """Determina la etiqueta que corresponde al archivo de datos, considerando excepciones."""
+    # Obtener excepciones
+    label_exceptions = get_label_exceptions()
+
+    # Buscar si el nombre del archivo coincide con alguna excepción
+    for exception, label in label_exceptions.items():
+        if exception in file_name:
+            logger.info(f"Excepción detectada: {file_name} asignado a la etiqueta '{label}'")
+            return label
+
+    # Si no hay excepciones, proceder con la lógica normal
     matching_labels = [label for label in label_list if label in file_name]
 
     if not matching_labels:
@@ -38,6 +59,12 @@ def determine_label(file_name: str, label_list: List[str], logger: logging.Logge
     return matching_labels[0]
 
 
+def detect_encoding(file_path):
+    with open(file_path, 'rb') as file:
+        result = detect(file.read())
+        return result['encoding']
+
+
 def load_label_file(label_path: Path, logger: logging.Logger) -> Optional[Dict]:
     """
     Carga y preprocesa el archivo de etiquetas para optimizar búsquedas posteriores.
@@ -47,12 +74,16 @@ def load_label_file(label_path: Path, logger: logging.Logger) -> Optional[Dict]:
         return None
 
     try:
+        # Detectar codificación
+        encoding = detect_encoding(label_path)
+
         label_dict = {}
         chunks = pd.read_csv(
             label_path,
             sep=";",
             chunksize=10000,
-            usecols=['saddr', 'daddr', 'attack', 'category', 'subcategory']
+            usecols=['saddr', 'daddr', 'attack', 'category', 'subcategory'],
+            encoding=encoding  # Aquí se incluye la codificación detectada
         )
 
         for chunk in chunks:
@@ -100,6 +131,10 @@ def process_file(data_path: Path, label_dict: Dict, logger: logging.Logger) -> O
         return None
 
     try:
+        # Detectar codificación
+        encoding = detect_encoding(data_path)
+        logger.debug(f"Encoding detection: {encoding} is most likely the one.")
+
         # Definir tipos de datos específicos para evitar warnings
         dtype_dict = get_column_dtypes()
 
@@ -109,7 +144,8 @@ def process_file(data_path: Path, label_dict: Dict, logger: logging.Logger) -> O
             sep=",",
             chunksize=10000,
             dtype=dtype_dict,
-            low_memory=False  # Previene warnings de tipos mixtos
+            low_memory=False,  # Previene warnings de tipos mixtos
+            encoding=encoding  # Usar la codificación detectada
         )
 
         for chunk in chunk_iterator:
