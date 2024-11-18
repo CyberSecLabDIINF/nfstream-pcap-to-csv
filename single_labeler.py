@@ -133,7 +133,7 @@ def process_file(data_path: Path, label_dict: Dict, logger: logging.Logger) -> O
     try:
         # Detectar codificación
         encoding = detect_encoding(data_path)
-        logger.debug(f"Encoding detection: {encoding} is most likely the one.")
+        #logger.debug(f"Encoding detection: {encoding} is most likely the one.")
 
         # Definir tipos de datos específicos para evitar warnings
         dtype_dict = get_column_dtypes()
