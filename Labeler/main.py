@@ -26,10 +26,26 @@ def main():
     # Inicializar logger
     logger = setup_logging(config.debug)
 
+    # Agregar logs de diagnóstico
+    logger.debug("Configuración inicial:")
+    logger.debug(f"data_path: {config.data_path}")
+    logger.debug(f"labels_dir: {config.labels_dir}")
+    logger.debug(f"output_path: {config.output_path}")
+    logger.debug(f"config_path: {config.config_path}")
+    logger.debug(f"debug: {config.debug}")
+
     # Crear y ejecutar el procesador
     processor = CSVProcessor(config, logger)
     if processor.initialize():
-        processor.process()
+        success = processor.process()
+        if not success:
+            logger.error("El procesamiento falló")
+            return 1
+        logger.info("Procesamiento completado exitosamente")
+        return 0
+    else:
+        logger.error("La inicialización falló")
+        return 1
 
 if __name__ == "__main__":
-    main()
+    exit(main())
