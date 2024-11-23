@@ -88,7 +88,7 @@ action() {
     echo "Labeling file: $file"
     base_name=$(basename "$file" .pcap)
     labeled_file="${target_dir}/${base_name}_labeled.csv"
-    python3 "$SCRIPT_DIR/single_labeler.py" --data-file "$target_dir/$name.csv" --labels-dir "$LABELING_FOLDER_DEFAULT" --output-file "$labeled_file" --debug
+    python3 "$SCRIPT_DIR/Labeler/single_labeler.py" --data-file "$target_dir/$name.csv" --labels-dir "$LABELING_FOLDER_DEFAULT" --output-file "$labeled_file" --debug
 }
 
 # -------------------------------------- SCRIPT --------------------------------------

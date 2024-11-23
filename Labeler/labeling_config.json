@@ -1,0 +1,48 @@
+{
+    "file_config": {
+        "data_file": {
+            "separator": ",",
+            "encoding": "auto",
+            "chunk_size": 10000,
+            "key_columns": {
+                "source_ip": "src_ip",
+                "destination_ip": "dst_ip"
+            }
+        },
+        "label_file": {
+            "separator": ";",
+            "encoding": "auto",
+            "chunk_size": 10000,
+            "columns": [
+                "saddr",
+                "daddr",
+                "attack",
+                "category",
+                "subcategory"
+            ],
+            "key_columns": {
+                "source_ip": "saddr",
+                "destination_ip": "daddr"
+            },
+            "label_columns": {
+                "attack": "attack",
+                "category": "category",
+                "subcategory": "subcategory"
+            }
+        }
+    },
+    "column_dtypes": {
+        "src_ip": "str",
+        "dst_ip": "str",
+        "src_tcp_flags_ack": "str",
+        "src_tcp_flags_push": "str",
+        "src_tcp_flags_reset": "str",
+        "src_tcp_flags_syn": "str",
+        "src_tcp_flags_fin": "str",
+        "dst_tcp_flags_ack": "str",
+        "dst_tcp_flags_push": "str",
+        "dst_tcp_flags_reset": "str",
+        "dst_tcp_flags_syn": "str",
+        "dst_tcp_flags_fin": "str"
+    }
+}
