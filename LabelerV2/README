@@ -11,6 +11,7 @@ Flujo del programa:
 3. El programa compara el nombre del archivo csv a etiquetar con los nombres de los archivos csv de las carpetas de referencia.
 4. El programa determina el nombre del archivo csv de referencia que corresponde al archivo csv a etiquetar.
 5. El programa lee el archivo de configuración json.
+(Pasos 6 y 7 se pueden realizar en cualquier orden)
 6. El programa carga el archivo csv a etiquetar.
 7. El programa carga el archivo csv de referencia.
 8. El programa configura las columnas a etiquetar y las columnas de referencia.

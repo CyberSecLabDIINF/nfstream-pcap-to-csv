@@ -1,13 +1,18 @@
-import json
 import os
+import json
 
+from pathlib import Path
+
+import modules.file_handler
+#from LabelerV2.modules import file_handler
+#from LabelerV2.modules.file_handler import load_json
 
 def load_config(file_path, dataset_type):
     """
     Carga y valida un archivo JSON de configuración para un tipo de dataset.
 
     Args:
-        file_path (str): Ruta del archivo JSON.
+        file_path (str | pathlib.Path): Ruta del archivo JSON.
         dataset_type (str): Tipo de dataset (por ejemplo, "Bot-IoT").
 
     Returns:
@@ -17,12 +22,16 @@ def load_config(file_path, dataset_type):
         FileNotFoundError: Si el archivo JSON no existe.
         ValueError: Si el dataset o su configuración no existen.
     """
+    # Convertir a string si es un objeto Path
+    if isinstance(file_path, Path):
+        file_path = str(file_path)
+
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"El archivo JSON no existe: {file_path}")
 
     try:
-        with open(file_path, "r") as f:
-            config = json.load(f)
+        # Pasar la ruta directamente a load_json
+        config = load_json(file_path)
     except json.JSONDecodeError as e:
         raise ValueError(f"No se pudo parsear el archivo JSON: {e}")
 
@@ -35,6 +44,7 @@ def load_config(file_path, dataset_type):
     dataset_config = config["datasets"][dataset_type]
     validate_dataset_config(dataset_config)
     return dataset_config
+
 
 
 def validate_dataset_config(dataset_config):
