@@ -1,0 +1,57 @@
+
+Argumentos de la línea de comandos:
+1. Ruta del archivo csv a etiquetar.
+2. Ruta la ruta de la carpeta que contiene otras carpetas con los archivos csv que se ocupan como referencia para etiquetar.
+3. Ruta del archivo json con las configuraciones de etiquetado. (columnas a etiquetar, columnas de referencia, etc.)
+4. Ruta de la carpeta donde se guardarán los archivos csv etiquetados.
+
+Flujo del programa:
+1. El programa recibe por parametros los argumentos de la línea de comandos.
+2. El programa lee el nombre del archivo csv a etiquetar.
+3. El programa compara el nombre del archivo csv a etiquetar con los nombres de los archivos csv de las carpetas de referencia.
+4. El programa determina el nombre del archivo csv de referencia que corresponde al archivo csv a etiquetar.
+5. El programa lee el archivo de configuración json.
+6. El programa carga el archivo csv a etiquetar.
+7. El programa carga el archivo csv de referencia.
+8. El programa configura las columnas a etiquetar y las columnas de referencia.
+9. El programa etiqueta el archivo csv.
+10. El programa guarda el archivo csv etiquetado en la carpeta de salida.
+
+Consideraciones:
+- El etiquetado se basa principalmente en la comparación de las columnas de referencia con las columnas a etiquetar,
+donde se busca encontrar coincidencias entre las columnas de referencia y las columnas a etiquetar.
+- Las columnas del archivo csv a etiquetar y del archivo csv de referencia pueden tener nombres diferentes, pero eso se especifica en el archivo de configuración.
+- En el archivo de configuración se especifica el nombre de las columnas a etiquetar y el nombre de las columnas de referencia, pueden ser una o varias columnas.
+
+Consideraciones de diseño:
+- El programa tiene una estructura modular, donde cada módulo tiene una función específica.
+- El programa tiene un módulo principal que se encarga de coordinar el flujo del programa. (main.py)
+- El programa debe tener logs para registrar las acciones que realiza.
+
+Estructura:
+csv_processor/
+├── main.py                # Módulo principal
+├── modules/               # Módulos especializados
+│   ├── file_handler.py
+│   ├── config_loader.py
+│   ├── matcher.py
+│   ├── tagger.py
+│   ├── logger.py
+├── data/                  # Carpeta principal de datos
+│   ├── labels/            # Distintos tipos de etiquetas
+│   │   ├── bot-iot/       # Etiquetas relacionadas con Bot-IoT
+│   │   │   ├── label1.csv
+│   │   │   ├── label2.csv
+│   │   └── other/         # Otros tipos de etiquetas
+│   │       ├── label1.csv
+│   │       ├── label2.csv
+│   ├── output/            # Archivos CSV etiquetados
+│   │   └── (CSV generados)
+│   └── target_csvs/       # Archivos CSV que serán etiquetados
+│       ├── file1.csv
+│       ├── file2.csv
+├── logs/                  # Carpeta de logs
+├── tests/                 # Tests unitarios
+├── requirements.txt       # Dependencias del proyecto
+├── labeler_config.json    # Configuración de etiquetado
+└── README.md              # Descripción del proyecto

@@ -1,0 +1,22 @@
+{
+    "datasets": {
+        "Bot-IoT": {
+            "columns_to_tag": ["src_ip", "dst_ip"],
+            "reference_columns": ["saddr", "daddr"],
+            "column_mapping": {
+                "src_ip":"saddr" ,
+                "dst_ip":"daddr"
+            },
+            "columns_to_copy": ["attack", "category", "subcategory"]
+        },
+        "Other-Dataset": {
+            "columns_to_tag": ["source", "destination"],
+            "reference_columns": ["ip_src", "ip_dst"],
+            "column_mapping": {
+                "source": "ip_src",
+                "destination": "ip_dst"
+            },
+            "columns_to_copy": ["category", "risk_level"]
+        }
+    }
+}

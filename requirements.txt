@@ -4,4 +4,4 @@ pandas
 typing
 pathlib
 charset_normalizer
-setuptools
+pytest
