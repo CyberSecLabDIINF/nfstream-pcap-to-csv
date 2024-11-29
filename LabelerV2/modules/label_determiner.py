@@ -1,6 +1,6 @@
 import os
 
-from modules.logger import setup_logger
+from .logger import setup_logger
 
 # Configurar el logger
 logger = setup_logger()

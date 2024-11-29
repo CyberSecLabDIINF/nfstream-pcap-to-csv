@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def match_columns(df_to_label, df_reference, config):
     """
     Compara las columnas de un archivo CSV a etiquetar con las columnas de un archivo CSV de referencia según la configuración.

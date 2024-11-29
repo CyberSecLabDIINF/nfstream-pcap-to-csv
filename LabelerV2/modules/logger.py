@@ -1,7 +1,6 @@
 import logging
 import os
 
-
 def setup_logger(log_dir="logs", log_file="app.log"):
     """
     Configura un logger que registra mensajes en un archivo y en la consola.
