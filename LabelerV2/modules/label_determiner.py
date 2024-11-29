@@ -1,6 +1,6 @@
 import os
 
-from modules.logger import setup_logger
+from .logger import setup_logger
 
 # Configurar el logger
 logger = setup_logger()
@@ -51,4 +51,9 @@ def process_tagging(target_csv, labels_directory):
             return label_file
 
     logger.error("No se encontró un archivo de referencia adecuado para el archivo objetivo.")
+    logger.info("Archivos de referencia cargados:")
+    logger.info(labels_directory)
+    logger.info("Archivos de referencia encontrados:")
+    for file in reference_files:
+        logger.info(f" - {file}")
     raise ValueError("No se encontró un archivo de referencia adecuado para el archivo objetivo.")

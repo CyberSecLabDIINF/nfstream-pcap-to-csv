@@ -3,7 +3,7 @@ import os
 
 from modules.logger import setup_logger
 from modules.config_loader import load_config
-from modules.file_handler import save_csv,load_csv,load_json
+from modules.file_handler import save_csv,load_csv
 from modules.label_determiner import process_tagging
 from modules.matcher import match_columns
 

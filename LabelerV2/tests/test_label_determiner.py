@@ -2,8 +2,8 @@ import os
 import pytest
 from unittest.mock import patch
 
-from modules.label_determiner import process_tagging
-from modules.logger import setup_logger
+from LabelerV2.modules.label_determiner import process_tagging
+from LabelerV2.modules.logger import setup_logger
 
 # Configurar el logger para las pruebas
 logger = setup_logger()

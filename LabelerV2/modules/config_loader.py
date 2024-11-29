@@ -3,9 +3,7 @@ import json
 
 from pathlib import Path
 
-import modules.file_handler
-#from LabelerV2.modules import file_handler
-#from LabelerV2.modules.file_handler import load_json
+from .file_handler import load_json
 
 def load_config(file_path, dataset_type):
     """
