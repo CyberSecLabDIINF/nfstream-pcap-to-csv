@@ -55,7 +55,7 @@ def validate_dataset_config(dataset_config):
     Raises:
         ValueError: Si falta alguna clave requerida o tiene formato incorrecto.
     """
-    required_keys = ["columns_to_tag", "reference_columns", "column_mapping", "columns_to_copy"]
+    required_keys = ["columns_to_tag", "reference_columns", "column_mapping", "columns_to_copy", "labeling_files"]
 
     for key in required_keys:
         if key not in dataset_config:

@@ -7,7 +7,19 @@
                 "src_ip":"saddr" ,
                 "dst_ip":"daddr"
             },
-            "columns_to_copy": ["attack", "category", "subcategory"]
+            "columns_to_copy": ["attack", "category", "subcategory"],
+            "labeling_files": {
+                "data_theft": "data_exfiltration",
+                "keylogging": "keylogging",
+                "http_ddos": "ddos_http",
+                "udp_ddos": "ddos_udp",
+                "tcp_ddos": "ddos_tcp",
+                "http_dos": "dos_http",
+                "udp_dos": "dos_udp",
+                "tcp_dos": "dos_tcp",
+                "osscan": "os_scan",
+                "servicescan": "service_scan"
+            }
         },
         "Other-Dataset": {
             "columns_to_tag": ["source", "destination"],

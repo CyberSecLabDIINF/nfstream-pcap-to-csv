@@ -16,7 +16,8 @@ def valid_config(tmp_path):
                 "columns_to_tag": ["saddr", "daddr"],
                 "reference_columns": ["src_ip", "dst_ip"],
                 "column_mapping": {"saddr": "src_ip", "daddr": "dst_ip"},
-                "columns_to_copy": ["label", "attack_type"]
+                "columns_to_copy": ["label", "attack_type"],
+                "labeling_files": {"keylogging": "keylogging", "data_theft": "data_exfiltration"}
             }
         }
     }
@@ -62,7 +63,8 @@ def test_validate_dataset_config():
         "columns_to_tag": ["saddr", "daddr"],
         "reference_columns": ["src_ip", "dst_ip"],
         "column_mapping": {"saddr": "src_ip", "daddr": "dst_ip"},
-        "columns_to_copy": ["attack", "category", "subcategory"]
+        "columns_to_copy": ["attack", "category", "subcategory"],
+        "labeling_files": {"keylogging": "keylogging", "data_theft": "data_exfiltration"}
     }
     try:
         validate_dataset_config(valid_dataset_config)
