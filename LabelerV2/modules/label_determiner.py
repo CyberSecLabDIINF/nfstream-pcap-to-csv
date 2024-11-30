@@ -5,50 +5,53 @@ from .logger import setup_logger
 # Configurar el logger
 logger = setup_logger()
 
-def process_tagging(target_csv, labels_directory):
+def determine_labeling_file(csv_to_process, labels_directory, config_dictionary):
     """
-    Determina el archivo de etiquetas adecuado para un archivo CSV objetivo dependiendo del
-    nombre del archivo y los archivos de referencia disponibles.
+    Determina el archivo de etiquetas adecuado para un archivo CSV objetivo basándose
+    en el nombre del archivo y el diccionario de configuración.
 
     Args:
-        target_csv (str): Ruta del archivo CSV objetivo.
+        csv_to_process (str): Ruta del archivo CSV objetivo.
         labels_directory (str): Ruta del directorio con archivos CSV de referencia.
+        config_dictionary (dict): Diccionario de configuración para el dataset.
 
     Returns:
         label_file (str): Ruta del archivo CSV de etiquetas correspondiente.
 
     Raises:
         ValueError: Si no se encuentra un archivo de referencia adecuado.
+        FileNotFoundError: Si el directorio de etiquetas no existe.
     """
-    logger.debug(f"Procesando archivo objetivo: {target_csv}")
-    logger.debug(f"Directorio de etiquetas: {labels_directory}")
+    try:
+        logger.debug(f"Procesando archivo objetivo: {csv_to_process}")
+        logger.debug(f"Directorio de etiquetas: {labels_directory}")
 
-    # Extraer el nombre del archivo objetivo
-    target_file_name = os.path.basename(target_csv)
-    logger.debug(f"Nombre del archivo objetivo: {target_file_name}")
+        csv_to_process_name = os.path.basename(csv_to_process)
+        csv_to_process_name = os.path.splitext(csv_to_process_name)[0].lower()
+        logger.debug(f"Nombre del archivo objetivo sin extensión: {csv_to_process_name}")
 
-    # Extraer el nombre del archivo objetivo sin extensión
-    target_file_name = os.path.splitext(target_file_name)[0]
-    logger.debug(f"Nombre del archivo objetivo sin extensión: {target_file_name}")
+        # Validar que el directorio de etiquetas exista
+        if not os.path.exists(labels_directory):
+            raise FileNotFoundError(f"No se encontró el directorio de etiquetas: {labels_directory}")
 
-    # Pasar a minúsculas
-    target_file_name = target_file_name.lower()
+        # Listar archivos en el directorio
+        reference_files = [f for f in os.listdir(labels_directory) if f.endswith(".csv")]
+        logger.debug(f"Archivos de referencia encontrados: {reference_files}")
 
-    # Extraer el tipo de ataque del nombre del archivo objetivo
-    attack_type = target_file_name.split('__')[0].split('_')[1]
-    attack_type = attack_type.lower()
-    logger.debug(f"Tipo de ataque extraído: {attack_type}")
+        # Buscar archivo de referencia en el diccionario
+        for key, value in config_dictionary["labeling_files"].items():
+            if key in csv_to_process_name:
+                label_file = os.path.join(labels_directory, f"{value}.csv")
+                logger.debug(f"Archivo de referencia encontrado: {label_file}")
+                return label_file
 
-    # Listar archivos de referencia en el directorio
-    reference_files = [f for f in os.listdir(labels_directory) if f.endswith(".csv")]
-    logger.debug(f"Archivos de referencia encontrados: {reference_files}")
-
-    # Buscar un archivo de referencia que coincida con el tipo de ataque
-    for ref_file in reference_files:
-        if attack_type in ref_file.lower():
-            label_file = os.path.join(labels_directory, ref_file)
-            logger.debug(f"Archivo de etiquetas encontrado: {label_file}")
-            return label_file
-
-    logger.error("No se encontró un archivo de referencia adecuado para el archivo objetivo.")
-    raise ValueError("No se encontró un archivo de referencia adecuado para el archivo objetivo.")
+        raise ValueError("No se encontró un archivo de referencia adecuado para el archivo objetivo.")
+    except FileNotFoundError as e:
+        logger.error(f"Error: {e}")
+        raise
+    except ValueError as e:
+        logger.error(f"Error: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error inesperado: {e}")
+        raise RuntimeError("Ocurrió un error inesperado al determinar el archivo de etiquetado.")

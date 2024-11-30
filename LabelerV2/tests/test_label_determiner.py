@@ -1,47 +1,105 @@
-import os
 import pytest
-from unittest.mock import patch
+import os
 
-from modules.label_determiner import process_tagging
-from modules.logger import setup_logger
+from unittest.mock import patch, mock_open
+from LabelerV2.modules.label_determiner import determine_labeling_file
 
-# Configurar el logger para las pruebas
-logger = setup_logger()
+@pytest.fixture
+def mock_config_bot_iot():
+    """Fixture que proporciona un diccionario de configuración de prueba."""
+    return {
+        "datasets": "Bot-IoT",
+        "labeling_files": {
+            "data_theft": "data_exfiltration",
+            "keylogging": "keylogging",
+            "http_ddos": "ddos_http",
+        }
+    }
 
-@patch("modules.label_determiner.os.listdir")
-def test_process_tagging_success(mock_listdir):
-    target_csv = "IoT_Keylogging__00002_20180619140719.csv"
-    labels_directory = "/path/to/labels"
+@pytest.fixture
+def mock_labels_directory(tmp_path):
+    """Crea un directorio temporal con archivos de etiquetas simulados."""
+    labels_dir = tmp_path / "Bot-IoT"
+    labels_dir.mkdir(parents=True)
+    (labels_dir / "data_exfiltration.csv").write_text("sample data")
+    (labels_dir / "keylogging.csv").write_text("sample data")
+    (labels_dir / "ddos_http.csv").write_text("sample data")
+    return str(labels_dir)
 
-    # Simulación de archivos en el directorio de etiquetas
-    mock_listdir.return_value = ["Keylogging.csv", "Data_exfiltration.csv"]
+def test_determine_labeling_file_match(mock_labels_directory, mock_config_bot_iot):
+    """Prueba que se encuentra el archivo de etiquetas correcto."""
+    csv_to_process = "data/data_theft_attack.csv"
+    result = determine_labeling_file(csv_to_process, mock_labels_directory, mock_config_bot_iot)
+    assert os.path.basename(result) == "data_exfiltration.csv"
 
-    expected_label_file = os.path.join(labels_directory, "Keylogging.csv")
-    result = process_tagging(target_csv, labels_directory)
+def test_determine_labeling_file_case_insensitive(mock_labels_directory, mock_config_bot_iot):
+    """Prueba que la función no es sensible a mayúsculas/minúsculas."""
+    csv_to_process = "data/KEYLOGGING_Attack.csv"
+    result = determine_labeling_file(csv_to_process, mock_labels_directory, mock_config_bot_iot)
+    assert os.path.basename(result) == "keylogging.csv"
 
-    logger.debug(f"Resultado esperado: {expected_label_file}, Resultado obtenido: {result}")
-    assert result == expected_label_file
+def test_determine_labeling_file_no_match(mock_labels_directory, mock_config_bot_iot):
+    """Prueba que lanza ValueError si no se encuentra un archivo de referencia adecuado."""
+    csv_to_process = "data/unknown_attack.csv"
+    with pytest.raises(ValueError, match="No se encontró un archivo de referencia adecuado"):
+        determine_labeling_file(csv_to_process, mock_labels_directory, mock_config_bot_iot)
 
-@patch("modules.label_determiner.os.listdir")
-def test_process_tagging_no_matching_reference(mock_listdir):
-    target_csv = "IoT_Keylogging__00002_20180619140719.csv"
-    labels_directory = "/path/to/labels"
+def test_determine_labeling_file_directory_not_found(mock_config_bot_iot):
+    """Prueba que lanza FileNotFoundError si el directorio de etiquetas no existe."""
+    csv_to_process = "data/data_theft_attack.csv"
+    labels_directory = "non_existent_directory"
+    with pytest.raises(FileNotFoundError, match="No se encontró el directorio de etiquetas"):
+        determine_labeling_file(csv_to_process, labels_directory, mock_config_bot_iot)
 
-    # Simulación de archivos en el directorio de etiquetas
-    mock_listdir.return_value = ["Data_exfiltration.csv"]
+def test_determine_labeling_file_partial_match(mock_labels_directory, mock_config_bot_iot):
+    """Prueba que encuentra coincidencias parciales en el nombre del archivo CSV."""
+    csv_to_process = "data/http_ddos_attack.csv"
+    result = determine_labeling_file(csv_to_process, mock_labels_directory, mock_config_bot_iot)
+    assert os.path.basename(result) == "ddos_http.csv"
 
-    with pytest.raises(ValueError) as exc_info:
-        process_tagging(target_csv, labels_directory)
-    logger.debug(f"Error esperado: {exc_info.value}")
+# --------------------------------------------------------------------------------------------------------------
+# Pruebas con otro dataset de ejemplo
+# --------------------------------------------------------------------------------------------------------------
 
-@patch("modules.label_determiner.os.listdir")
-def test_process_tagging_empty_directory(mock_listdir):
-    target_csv = "IoT_Keylogging__00002_20180619140719.csv"
-    labels_directory = "/path/to/labels"
+@pytest.fixture
+def mock_labels_directory_netscan(tmp_path):
+    """Crea un directorio temporal con archivos de etiquetas para el dataset NetScan."""
+    labels_directory = tmp_path / "NetScan"
+    labels_directory.mkdir(parents=True, exist_ok=True)
 
-    # Simulación de un directorio vacío
-    mock_listdir.return_value = []
+    # Crear archivos de referencia
+    (labels_directory / "port_scan.csv").touch()
+    (labels_directory / "syn_flood.csv").touch()
+    (labels_directory / "icmp_flood.csv").touch()
 
-    with pytest.raises(ValueError) as exc_info:
-        process_tagging(target_csv, labels_directory)
-    logger.debug(f"Error esperado: {exc_info.value}")
+    return str(labels_directory)
+
+@pytest.fixture
+def mock_config_netscan():
+    """Devuelve una configuración ficticia para el dataset NetScan."""
+    return {
+        "datasets": "NetScan",
+        "labeling_files": {
+            "portscan": "port_scan",
+            "synflood": "syn_flood",
+            "icmpflood": "icmp_flood",
+        }
+    }
+
+def test_determine_labeling_file_portscan(mock_labels_directory_netscan, mock_config_netscan):
+    """Prueba para verificar que encuentra el archivo de etiquetas correcto para un portscan."""
+    csv_to_process = "data/portscan_activity.csv"
+    result = determine_labeling_file(csv_to_process, mock_labels_directory_netscan, mock_config_netscan)
+    assert "port_scan.csv" in result
+
+def test_determine_labeling_file_synflood(mock_labels_directory_netscan, mock_config_netscan):
+    """Prueba para verificar que encuentra el archivo de etiquetas correcto para un syn flood."""
+    csv_to_process = "data/synflood_attack.csv"
+    result = determine_labeling_file(csv_to_process, mock_labels_directory_netscan, mock_config_netscan)
+    assert "syn_flood.csv" in result
+
+def test_determine_labeling_file_not_found(mock_labels_directory_netscan, mock_config_netscan):
+    """Prueba para verificar que lanza una excepción cuando no se encuentra un archivo de etiquetas."""
+    csv_to_process = "data/unknown_activity.csv"
+    with pytest.raises(ValueError, match="No se encontró un archivo de referencia adecuado"):
+        determine_labeling_file(csv_to_process, mock_labels_directory_netscan, mock_config_netscan)
