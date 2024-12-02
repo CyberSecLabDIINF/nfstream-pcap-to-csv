@@ -37,7 +37,6 @@ def save_csv(dataframe, file_path):
     except Exception as e:
         raise ValueError(f"No se pudo guardar el archivo CSV en {file_path}: {e}")
 
-
 def load_json(file_path):
     """
     Carga un archivo JSON como un diccionario de Python.
@@ -47,15 +46,28 @@ def load_json(file_path):
 
     Returns:
         dict: Diccionario con el contenido del archivo JSON.
+
+    Raises:
+        FileNotFoundError: Si el archivo JSON no existe.
+        ValueError: Si no se puede parsear el JSON o si no es un diccionario.
     """
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"El archivo JSON no existe: {file_path}")
 
     try:
-        with open(file_path, "r") as f:
-            return json.load(f)
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            raise ValueError(f"El contenido del archivo JSON no es un diccionario: {file_path}")
+
+        return data
+
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Error al parsear el archivo JSON {file_path}: {e}")
     except Exception as e:
-        raise ValueError(f"No se pudo leer el archivo JSON {file_path}: {e}")
+        raise ValueError(f"Ocurrió un error al cargar el archivo JSON {file_path}: {e}")
+
 
 
 def list_csv_files(directory):

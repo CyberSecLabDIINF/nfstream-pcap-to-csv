@@ -14,7 +14,7 @@ def load_config(file_path, dataset_type):
         dataset_type (str): Tipo de dataset (por ejemplo, "Bot-IoT").
 
     Returns:
-        dict: Configuración específica para el dataset solicitado.
+        dict: Configuración completa con el tipo de dataset como clave principal.
 
     Raises:
         FileNotFoundError: Si el archivo JSON no existe.
@@ -28,8 +28,9 @@ def load_config(file_path, dataset_type):
         raise FileNotFoundError(f"El archivo JSON no existe: {file_path}")
 
     try:
-        # Pasar la ruta directamente a load_json
         config = load_json(file_path)
+        if not isinstance(config, dict):
+            raise ValueError("El contenido del archivo JSON no es un diccionario.")
     except json.JSONDecodeError as e:
         raise ValueError(f"No se pudo parsear el archivo JSON: {e}")
 
@@ -41,8 +42,9 @@ def load_config(file_path, dataset_type):
 
     dataset_config = config["datasets"][dataset_type]
     validate_dataset_config(dataset_config)
-    return dataset_config
 
+    # Devolver la configuración con el dataset_type como clave
+    return {dataset_type: dataset_config}
 
 
 def validate_dataset_config(dataset_config):
@@ -60,8 +62,7 @@ def validate_dataset_config(dataset_config):
     for key in required_keys:
         if key not in dataset_config:
             raise ValueError(f"Falta la clave requerida: {key}")
-        if key in ["columns_to_tag", "reference_columns", "columns_to_copy"] and not isinstance(dataset_config[key],
-                                                                                                list):
+        if key in ["columns_to_tag", "reference_columns", "columns_to_copy"] and not isinstance(dataset_config[key], list):
             raise ValueError(f"La clave '{key}' debe ser una lista.")
         if key == "column_mapping" and not isinstance(dataset_config[key], dict):
             raise ValueError(f"La clave '{key}' debe ser un diccionario.")
