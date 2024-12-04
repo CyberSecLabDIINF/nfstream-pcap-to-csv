@@ -13,8 +13,8 @@ def valid_config(tmp_path):
     config_content = {
         "datasets": {
             "Bot-IoT": {
-                "columns_to_tag": ["saddr", "daddr"],
-                "reference_columns": ["src_ip", "dst_ip"],
+                "target_csv_key_columns": ["saddr", "daddr"],
+                "reference_csv_key_columns": ["src_ip", "dst_ip"],
                 "column_mapping": {"saddr": "src_ip", "daddr": "dst_ip"},
                 "columns_to_copy": ["label", "attack_type"],
                 "labeling_files": {"keylogging": "keylogging", "data_theft": "data_exfiltration"}
@@ -31,8 +31,8 @@ def invalid_config(tmp_path):
     config_content = {
         "datasets": {
             "Bot-IoT": {
-                "columns_to_tag": ["saddr", "daddr"],
-                # Falta "reference_columns" y otros campos
+                "target_csv_key_columns": ["saddr", "daddr"],
+                # Falta "reference_csv_key_columns" y otros campos
             }
         }
     }
@@ -45,8 +45,8 @@ def test_load_config_valid(valid_config):
     config = load_config(valid_config, dataset_type)
     logger.info(f"Configuración cargada: {config}")
 
-    assert "columns_to_tag" in config
-    assert config["columns_to_tag"] == ["saddr", "daddr"]
+    assert "target_csv_key_columns" in config
+    assert config["target_csv_key_columns"] == ["saddr", "daddr"]
 
 def test_load_config_invalid(invalid_config):
     """Prueba cargar un archivo JSON inválido."""
@@ -60,8 +60,8 @@ def test_load_config_invalid(invalid_config):
 def test_validate_dataset_config():
     """Prueba la validación de configuración para un dataset."""
     valid_dataset_config = {
-        "columns_to_tag": ["saddr", "daddr"],
-        "reference_columns": ["src_ip", "dst_ip"],
+        "target_csv_key_columns": ["saddr", "daddr"],
+        "reference_csv_key_columns": ["src_ip", "dst_ip"],
         "column_mapping": {"saddr": "src_ip", "daddr": "dst_ip"},
         "columns_to_copy": ["attack", "category", "subcategory"],
         "labeling_files": {"keylogging": "keylogging", "data_theft": "data_exfiltration"}
@@ -73,8 +73,8 @@ def test_validate_dataset_config():
         pytest.fail(f"Validación fallida: {e}")
 
     invalid_dataset_config = {
-        "columns_to_tag": ["saddr"],
-        # Falta "reference_columns"
+        "target_csv_key_columns": ["saddr"],
+        # Falta "reference_csv_key_columns"
     }
     with pytest.raises(ValueError) as exc_info:
         validate_dataset_config(invalid_dataset_config)

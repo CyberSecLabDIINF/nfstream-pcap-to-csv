@@ -3,9 +3,9 @@ import os
 
 from modules.logger import setup_logger
 from modules.config_loader import load_config
-from modules.file_handler import save_csv,load_csv,load_json
-from modules.label_determiner import process_tagging
-from modules.matcher import match_columns
+from modules.file_handler import save_csv, load_csv
+from modules.label_determiner import determine_labeling_file
+from modules.matcher import match_columns_optimized
 
 def main():
     # Configurar el logger
@@ -20,55 +20,67 @@ def main():
     parser.add_argument("--dataset_type", required=True, help="Tipo de dataset (por ejemplo, 'Bot-IoT').")
     args = parser.parse_args()
 
-    # Determinar tipo de etiquetado
-    try:
-        logger.info("Determinando tipo de etiquetado...")
-        label_file_path = process_tagging(args.target_csv, args.labels_dir)
-    except Exception as exp:
-        logger.error(f"Error durante el proceso de etiquetado: {exp}")
-        print(f"Error durante el proceso de etiquetado: {exp}")
+    # Inicializar variables para el proceso
+    dataset_config_dictionary = None
+    label_file_path = None
+    tagged_df = None
+    df_for_tagging = None
+    target_df = None
 
     # Cargar configuración específica para el dataset
     try:
         logger.info("Cargando configuración...")
-        json_config = load_config(args.config_path, args.dataset_type)
+        dataset_config_dictionary = load_config(args.config_path, args.dataset_type)
     except Exception as exp:
         logger.error(f"Error durante la carga de la configuración: {exp}")
         print(f"Error durante la carga de la configuración: {exp}")
 
-    # Cargar archivo CSV de etiquetado correspondiente
+    # Determinar archivo fuente de etiquetado
     try:
-        logger.info("Cargando archivo CSV de etiquetado...")
-        df_tagged = load_csv(label_file_path)
+        logger.info("Determinando tipo de etiquetado...")
+        label_file_path = determine_labeling_file(args.target_csv, args.labels_dir, dataset_config_dictionary)
     except Exception as exp:
-        logger.error(f"Error durante la carga del archivo CSV de etiquetado: {exp}")
-        print(f"Error durante la carga del archivo CSV de etiquetado: {exp}")
+        logger.error(f"Error durante el proceso de seleccion: {exp}")
+        print(f"Error durante el proceso de sleccion: {exp}")
+
+    print(f"Archivo de etiquetado: {label_file_path}")
+
+    # Cargar archivo CSV de etiquetado correspondiente
+    if label_file_path:
+        try:
+            logger.info("Cargando archivo CSV de etiquetado...")
+            df_for_tagging = load_csv(label_file_path)
+        except Exception as exp:
+            logger.error(f"Error durante la carga del archivo CSV de etiquetado: {exp}")
+            print(f"Error durante la carga del archivo CSV de etiquetado: {exp}")
 
     # Cargar archivo CSV a etiquetar
     try:
         logger.info("Cargando archivo CSV a etiquetar...")
-        df_target = load_csv(args.target_csv)
+        target_df = load_csv(args.target_csv)
     except Exception as exp:
         logger.error(f"Error durante la carga del archivo CSV a etiquetar: {exp}")
         print(f"Error durante la carga del archivo CSV a etiquetar: {exp}")
 
     # Procesar el etiquetado
-    try:
-        logger.info("Iniciando proceso de etiquetado...")
-        df_tagged = match_columns(df_target, df_tagged, json_config)
-    except Exception as exp:
-        logger.error(f"Error durante el proceso de etiquetado: {exp}")
-        print(f"Error durante el proceso de etiquetado: {exp}")
+    if df_for_tagging is not None and target_df is not None:
+        try:
+            logger.info("Iniciando proceso de etiquetado...")
+            tagged_df = match_columns_optimized(target_df, df_for_tagging, args.dataset_type ,dataset_config_dictionary)
+        except Exception as exp:
+            logger.error(f"Error durante el proceso de etiquetado: {exp}")
+            print(f"Error durante el proceso de etiquetado: {exp}")
+
 
     # Guardar el DataFrame etiquetado
-    try:
-        logger.info("Guardando archivo etiquetado...")
-        save_csv(df_tagged, args.output_file)
-    except Exception as exp:
-        logger.error(f"Error durante el guardado del archivo etiquetado: {exp}")
-        print(f"Error durante el guardado del archivo etiquetado: {exp}")
+    if tagged_df is not None:
+        try:
+            logger.info("Guardando archivo etiquetado...")
+            save_csv(tagged_df, args.output_file)
+        except Exception as exp:
+            logger.error(f"Error durante el guardado del archivo etiquetado: {exp}")
+            print(f"Error durante el guardado del archivo etiquetado: {exp}")
 
-    logger.info(f"Archivo etiquetado guardado exitosamente en: {args.output_file}")
 
 if __name__ == "__main__":
     main()

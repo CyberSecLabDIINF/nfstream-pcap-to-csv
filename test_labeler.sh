@@ -2,12 +2,11 @@
 
 # Definir variables para las rutas
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"      # Directorio donde se encuentra el script
-#VENV_DIR="$SCRIPT_DIR/.venv"                                    # Ruta al entorno virtual
 LABELS_DIR="$SCRIPT_DIR/CSVs/Labeling/"                         # Carpeta de archivos etiquetados
 CONFIG_FILE="$SCRIPT_DIR/LabelerV2/labeler_config.json"         # Archivo de configuración
 
-DATA_FILE="/mnt/f/USACH/Ayudantias/Investigacion-Redes/PCAPs/Bot-IoT/Theft/Keylogging/IoT_Keylogging__00001_20180619135903.pcap" # Archivo de datos
-OUTPUT_FILE="$SCRIPT_DIR/CSVs/Labeling/Bot-IoT/Theft/Keylogging/IoT_Keylogging__00001_20180619135903.csv" # Archivo de salida
+DATA_FILE="$SCRIPT_DIR/CSVs/f/USACH/Ayudantias/Investigacion-Redes/PCAPs/Bot-IoT/Theft/Keylogging/IoT_Keylogging__00003_20180619141524.csv" # Archivo de datos
+OUTPUT_FILE="$SCRIPT_DIR/CSVs/Labeling/Results/Prueba03/IoT_Keylogging__00003_20180619141524_labeled.csv" # Archivo de salida
 DATASET_TYPE="Bot-IoT"                                          # Tipo de conjunto de datos
 
 # Activar el entorno virtual

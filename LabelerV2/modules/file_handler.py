@@ -2,10 +2,9 @@ import os
 import pandas as pd
 import json
 
-
 def load_csv(file_path):
     """
-    Carga un archivo CSV como un DataFrame de pandas.
+    Carga un archivo CSV como un DataFrame de pandas, detectando automáticamente el delimitador y las comillas.
 
     Args:
         file_path (str): Ruta del archivo CSV.
@@ -17,9 +16,11 @@ def load_csv(file_path):
         raise FileNotFoundError(f"El archivo CSV no existe: {file_path}")
 
     try:
-        return pd.read_csv(file_path)
+        # Detecta automáticamente el separador y maneja las comillas
+        return pd.read_csv(file_path, sep=None, engine='python', quotechar='"', encoding='utf-8')
     except Exception as e:
         raise ValueError(f"No se pudo leer el archivo CSV {file_path}: {e}")
+
 
 
 def save_csv(dataframe, file_path):

@@ -57,12 +57,12 @@ def validate_dataset_config(dataset_config):
     Raises:
         ValueError: Si falta alguna clave requerida o tiene formato incorrecto.
     """
-    required_keys = ["columns_to_tag", "reference_columns", "column_mapping", "columns_to_copy", "labeling_files"]
+    required_keys = ["target_csv_key_columns", "reference_csv_key_columns", "column_mapping", "columns_to_copy", "labeling_files"]
 
     for key in required_keys:
         if key not in dataset_config:
             raise ValueError(f"Falta la clave requerida: {key}")
-        if key in ["columns_to_tag", "reference_columns", "columns_to_copy"] and not isinstance(dataset_config[key], list):
+        if key in ["target_csv_key_columns", "reference_csv_key_columns", "columns_to_copy"] and not isinstance(dataset_config[key], list):
             raise ValueError(f"La clave '{key}' debe ser una lista.")
         if key == "column_mapping" and not isinstance(dataset_config[key], dict):
             raise ValueError(f"La clave '{key}' debe ser un diccionario.")
@@ -76,6 +76,6 @@ def print_config_summary(config):
         config (dict): Diccionario de configuración.
     """
     print("Resumen de la configuración:")
-    print(f"- Columnas a etiquetar: {config['columns_to_tag']}")
-    print(f"- Columnas de referencia: {config['reference_columns']}")
+    print(f"- Columnas a etiquetar: {config['target_csv_key_columns']}")
+    print(f"- Columnas de referencia: {config['reference_csv_key_columns']}")
     print(f"- Columnas de salida: {config['output_columns']}")

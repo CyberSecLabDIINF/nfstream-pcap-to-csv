@@ -1,6 +1,6 @@
+import argparse
 import pandas as pd
 from pathlib import Path
-import argparse
 from collections import defaultdict
 
 
@@ -8,12 +8,6 @@ def analyze_labels_in_csvs(folder_path: Path):
     """
     Analiza los archivos CSV en la carpeta dada para encontrar etiquetas únicas
     en las columnas 'attack', 'category' y 'subcategory'.
-
-    Args:
-        folder_path (Path): Ruta de la carpeta que contiene los archivos CSV.
-
-    Returns:
-        dict: Diccionario con los valores únicos y su conteo por columna.
     """
     label_counts = {
         'attack': defaultdict(int),
@@ -37,8 +31,9 @@ def analyze_labels_in_csvs(folder_path: Path):
     for csv_file in csv_files:
         try:
             print(f"Procesando archivo: {csv_file.name}")
-            # Leer CSV
-            df = pd.read_csv(csv_file, sep=";", usecols=['attack', 'category', 'subcategory'], low_memory=False)
+
+            # Leer el CSV sin especificar delimitador, pandas lo detectará automáticamente
+            df = pd.read_csv(csv_file, sep=None, engine='python', usecols=['attack', 'category', 'subcategory'])
 
             # Contar valores únicos en las columnas relevantes
             for column in ['attack', 'category', 'subcategory']:
