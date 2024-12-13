@@ -29,7 +29,7 @@ def main():
 
     # Cargar configuración específica para el dataset
     try:
-        logger.info("Cargando configuración...")
+        #logger.info("Cargando configuración...")
         dataset_config_dictionary = load_config(args.config_path, args.dataset_type)
     except Exception as exp:
         logger.error(f"Error durante la carga de la configuración: {exp}")
@@ -37,7 +37,7 @@ def main():
 
     # Determinar archivo fuente de etiquetado
     try:
-        logger.info("Determinando tipo de etiquetado...")
+        #logger.info("Determinando tipo de etiquetado...")
         label_file_path = determine_labeling_file(args.target_csv, args.labels_dir, dataset_config_dictionary)
     except Exception as exp:
         logger.error(f"Error durante el proceso de seleccion: {exp}")
@@ -48,8 +48,8 @@ def main():
     # Cargar archivo CSV de etiquetado correspondiente
     if label_file_path:
         try:
-            logger.info("Cargando archivo CSV de etiquetado...")
-            logger.info(f"Archivo de etiquetado: {label_file_path}")
+            #logger.info("Cargando archivo CSV de etiquetado...")
+            #logger.info(f"Archivo de etiquetado: {label_file_path}")
             df_for_tagging = load_csv(label_file_path)
         except Exception as exp:
             logger.error(f"Error durante la carga del archivo CSV de etiquetado: {exp}")
@@ -57,7 +57,7 @@ def main():
 
     # Cargar archivo CSV a etiquetar
     try:
-        logger.info("Cargando archivo CSV a etiquetar...")
+        #logger.info("Cargando archivo CSV a etiquetar...")
         target_df = load_csv(args.target_csv)
     except Exception as exp:
         logger.error(f"Error durante la carga del archivo CSV a etiquetar: {exp}")

@@ -3,86 +3,118 @@ from .logger import setup_logger
 
 logger = setup_logger()
 
-
-def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dictionary):
+def validate_config(config_dictionary, dataset_type):
     """
-    Compara las columnas de un archivo CSV a etiquetar con las columnas de un archivo CSV de referencia
-    según la configuración, optimizando el proceso mediante merge y operaciones vectorizadas.
+    Valida el diccionario de configuración para un tipo de dataset específico.
 
     Args:
-        df_to_label (pd.DataFrame): DataFrame del archivo CSV que se etiquetará.
-        df_reference (pd.DataFrame): DataFrame del archivo CSV de referencia.
+        config_dictionary (dict): Diccionario de configuración.
         dataset_type (str): Tipo de dataset.
-        config_dictionary (dict): Configuración de etiquetado, que incluye columnas a etiquetar,
-                                  columnas de referencia y mapeo de columnas.
 
     Returns:
-        pd.DataFrame: DataFrame etiquetado.
-    """
-    logger.info("Iniciando el proceso de etiquetado...")
+        dict: Configuración específica del dataset.
 
-    # Verificar que el diccionario de configuración sea válido
+    Raises:
+        ValueError: Si el diccionario de configuración no es válido.
+    """
     if not isinstance(config_dictionary, dict):
         raise ValueError("El diccionario de configuración no es válido.")
 
-    logger.info(f"Tipo de dataset recibido: {dataset_type}")
-
-    # Obtener la configuración específica del dataset
     dataset_config = config_dictionary.get(dataset_type, {})
     if not dataset_config:
         raise ValueError(f"No se encontró configuración para el tipo de dataset: {dataset_type}")
 
     logger.info(f"Configuración cargada para {dataset_type}: {dataset_config}")
+    return dataset_config
 
-    # Columnas clave y columnas que se copiarán
-    target_csv_key_columns = dataset_config['target_csv_key_columns']
-    reference_csv_key_columns = dataset_config['reference_csv_key_columns']
-    column_mapping = dataset_config['column_mapping']
-    columns_to_copy = dataset_config['columns_to_copy']
+def check_required_columns(df, required_columns, df_name):
+    """
+    Verifica que las columnas requeridas estén presentes en un DataFrame.
 
-    logger.info(f"Columnas clave en df_to_label: {target_csv_key_columns}")
-    logger.info(f"Columnas clave en df_reference: {reference_csv_key_columns}")
-    logger.info(f"Mapeo de columnas: {column_mapping}")
-    logger.info(f"Columnas a copiar: {columns_to_copy}")
+    Args:
+        df (pd.DataFrame): DataFrame a verificar.
+        required_columns (list): Lista de columnas requeridas.
+        df_name (str): Nombre descriptivo del DataFrame para los mensajes de error.
 
-    # Verificar que las columnas necesarias estén presentes en los DataFrames
-    missing_target_columns = set(target_csv_key_columns) - set(df_to_label.columns)
-    missing_reference_columns = set(reference_csv_key_columns) - set(df_reference.columns)
+    Raises:
+        ValueError: Si faltan columnas en el DataFrame.
+    """
+    missing_columns = set(required_columns) - set(df.columns)
+    if missing_columns:
+        raise ValueError(f"El {df_name} no tiene las columnas esperadas: {missing_columns}")
 
-    if missing_target_columns:
-        raise ValueError(f"El archivo a etiquetar no tiene las columnas esperadas: {missing_target_columns}")
-    if missing_reference_columns:
-        raise ValueError(f"El archivo de referencia no tiene las columnas esperadas: {missing_reference_columns}")
+def convert_columns_to_string(df, columns):
+    """
+    Convierte las columnas especificadas a tipo string.
 
-    logger.info("Todas las columnas necesarias están presentes.")
+    Args:
+        df (pd.DataFrame): DataFrame en el que se realizarán las conversiones.
+        columns (list): Lista de columnas a convertir.
+    """
+    for col in columns:
+        df[col] = df[col].astype(str)
+        logger.info(f"Columna {col} convertida a string.")
 
-    # Convertir las columnas clave a tipo string para evitar errores de tipo en el merge
-    logger.info("Convirtiendo las columnas clave a tipo string para evitar errores de tipo...")
-    for col in target_csv_key_columns:
-        df_to_label[col] = df_to_label[col].astype(str)
-        logger.info(f"Columna {col} de df_to_label convertida a string.")
-    for col in reference_csv_key_columns:
-        df_reference[col] = df_reference[col].astype(str)
-        logger.info(f"Columna {col} de df_reference convertida a string.")
+def clean_column_values(df, columns):
+    """
+    Limpia los valores de las columnas especificadas, eliminando puntos.
 
+    Args:
+        df (pd.DataFrame): DataFrame en el que se limpiarán los valores.
+        columns (list): Lista de columnas a limpiar.
+    """
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].str.replace('.', '', regex=False)
+            logger.info(f"Valores de la columna {col} limpiados de puntos.")
 
-    # Renombrar columnas en df_reference para que coincidan con df_to_label según el mapeo
-    logger.info("Renombrando columnas en df_reference según el mapeo definido...")
-    df_reference_renamed = df_reference.rename(columns=column_mapping)
+def rename_columns(df, column_mapping):
+    """
+    Renombra las columnas de un DataFrame según un mapeo dado.
 
-    # Realizar el merge utilizando las columnas clave
-    logger.info("Realizando merge entre df_to_label y df_reference_renamed...")
-    merged_df = df_to_label.merge(
-        df_reference_renamed,
+    Args:
+        df (pd.DataFrame): DataFrame a renombrar.
+        column_mapping (dict): Mapeo de columnas.
+
+    Returns:
+        pd.DataFrame: DataFrame con las columnas renombradas.
+    """
+    logger.info("Renombrando columnas según el mapeo definido...")
+    return df.rename(columns=column_mapping)
+
+def merge_dataframes(df_to_label, df_reference, target_columns, reference_columns):
+    """
+    Realiza un merge entre dos DataFrames utilizando columnas clave.
+
+    Args:
+        df_to_label (pd.DataFrame): DataFrame del archivo CSV que se etiquetará.
+        df_reference (pd.DataFrame): DataFrame del archivo CSV de referencia.
+        target_columns (list): Columnas clave del DataFrame objetivo.
+        reference_columns (list): Columnas clave del DataFrame de referencia.
+
+    Returns:
+        pd.DataFrame: DataFrame combinado.
+    """
+    logger.info("Realizando merge entre los DataFrames...")
+    return df_to_label.merge(
+        df_reference,
         how='left',
-        left_on=target_csv_key_columns,
-        right_on=reference_csv_key_columns,
+        left_on=target_columns,
+        right_on=reference_columns,
         suffixes=('', '_ref')
     )
-    logger.info("Merge completado.")
-    logger.info(f"columas en merged_df: {merged_df.columns}")
 
-    # Copiar las columnas de referencia en caso de coincidencias
+def copy_reference_columns(merged_df, columns_to_copy):
+    """
+    Copia las columnas de referencia en caso de coincidencias.
+
+    Args:
+        merged_df (pd.DataFrame): DataFrame combinado después del merge.
+        columns_to_copy (list): Columnas a copiar desde el sufijo "_ref".
+
+    Returns:
+        pd.DataFrame: DataFrame con las columnas copiadas.
+    """
     logger.info("Copiando columnas en caso de coincidencia...")
     for col in columns_to_copy:
         ref_col = col + '_ref'
@@ -91,49 +123,78 @@ def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dict
             merged_df[col] = merged_df[col].combine_first(merged_df[ref_col])
             merged_df.drop(columns=[ref_col], inplace=True)
             logger.info(f"Columna {col} actualizada y columna {ref_col} eliminada.")
-
-    logger.info("Proceso de etiquetado completado.")
     return merged_df
 
-
-# Función para comparar dos filas de acuerdo al column_mapping
-def compare_rows(row_to_label, row_reference, column_mapping):
+def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dictionary):
     """
-    Compara dos filas de acuerdo al mapeo de columnas.
+    Proceso principal de etiquetado optimizado.
 
     Args:
-        row_to_label (pd.Series): Fila del archivo CSV que se etiquetará.
-        row_reference (pd.Series): Fila del archivo CSV de referencia.
-        column_mapping (dict): Mapeo de columnas.
+        df_to_label (pd.DataFrame): DataFrame del archivo CSV que se etiquetará.
+        df_reference (pd.DataFrame): DataFrame del archivo CSV de referencia.
+        dataset_type (str): Tipo de dataset.
+        config_dictionary (dict): Configuración de etiquetado.
 
     Returns:
-        bool: True si las filas coinciden, False en caso contrario.
+        pd.DataFrame: DataFrame etiquetado.
     """
-    for label_col, reference_col in column_mapping.items():
-        # Detallado de comparaciones
-        logger.info(f"Comparando {label_col} con {reference_col}...")
-        logger.info(f"{row_to_label[label_col]} == {row_reference[reference_col]}")
-        if row_to_label[label_col] != row_reference[reference_col]:
-            return False
-    return True
+    logger.info("Iniciando el proceso de etiquetado...")
 
-# Función para copiar las columnas de columns_to_copy de una fila a otra
-def copy_columns(row_to_label, row_reference, columns_to_copy):
+    # Validar configuración y obtener detalles del dataset
+    dataset_config = validate_config(config_dictionary, dataset_type)
+
+    # Verificar columnas requeridas
+    check_required_columns(df_to_label, dataset_config['target_csv_key_columns'], "archivo a etiquetar")
+    check_required_columns(df_reference, dataset_config['reference_csv_key_columns'], "archivo de referencia")
+
+    # Convertir columnas clave a tipo string
+    convert_columns_to_string(df_to_label, dataset_config['target_csv_key_columns'])
+    convert_columns_to_string(df_reference, dataset_config['reference_csv_key_columns'])
+
+    # Limpiar valores de las columnas clave
+    clean_column_values(df_to_label, dataset_config['target_csv_key_columns'])
+    clean_column_values(df_reference, dataset_config['reference_csv_key_columns'])
+
+    # Renombrar columnas del DataFrame de referencia
+    df_reference_renamed = rename_columns(df_reference, dataset_config['column_mapping'])
+
+    # Realizar merge entre los DataFrames
+    merged_df = merge_dataframes(
+        df_to_label,
+        df_reference_renamed,
+        dataset_config['target_csv_key_columns'],
+        dataset_config['reference_csv_key_columns']
+    )
+
+    # Copiar columnas en caso de coincidencia
+    final_df = copy_reference_columns(merged_df, dataset_config['columns_to_copy'])
+
+    logger.info("Proceso de etiquetado completado.")
+    return final_df
+
+# Uso del proceso actualizado
+def process_tagging(df_for_tagging, target_df, dataset_type, dataset_config_dictionary):
     """
-    Copia las columnas de una fila a otra.
+    Función de alto nivel para procesar el etiquetado de un DataFrame objetivo.
 
     Args:
-        row_to_label (pd.Series): Fila del archivo CSV que se etiquetará.
-        row_reference (pd.Series): Fila del archivo CSV de referencia.
-        columns_to_copy (list): Lista de columnas a copiar.
+        df_for_tagging (pd.DataFrame): DataFrame de referencia para el etiquetado.
+        target_df (pd.DataFrame): DataFrame objetivo a etiquetar.
+        dataset_type (str): Tipo de dataset.
+        dataset_config_dictionary (dict): Configuración del etiquetado.
 
     Returns:
-        pd.Series: Fila con las columnas copiadas.
+        pd.DataFrame: DataFrame etiquetado.
     """
-    for column in columns_to_copy:
-        row_to_label[column] = row_reference[column]
-    return row_to_label
-
+    if df_for_tagging is not None and target_df is not None:
+        try:
+            logger.info("Iniciando proceso de etiquetado...")
+            return match_columns_optimized(target_df, df_for_tagging, dataset_type, dataset_config_dictionary)
+        except Exception as exp:
+            logger.error(f"Error durante el proceso de etiquetado: {exp}")
+            raise
+    else:
+        raise ValueError("Los DataFrames de entrada no deben ser None.")
 
 
 '''
