@@ -4,6 +4,19 @@ from pathlib import Path
 from collections import defaultdict
 
 
+def filter_labeled_files(csv_files):
+    """
+    Filtra archivos CSV cuyo nombre termina en '_labeled.csv'.
+
+    Args:
+        csv_files (list[Path]): Lista de archivos CSV.
+
+    Returns:
+        list[Path]: Archivos que cumplen con el criterio.
+    """
+    return [csv_file for csv_file in csv_files if csv_file.name.endswith("_labeled.csv")]
+
+
 def analyze_labels_in_csvs(folder_path: Path):
     """
     Analiza los archivos CSV en la carpeta dada para encontrar etiquetas únicas
@@ -22,11 +35,13 @@ def analyze_labels_in_csvs(folder_path: Path):
 
     # Procesar todos los archivos CSV en la carpeta
     csv_files = list(folder_path.glob("*.csv"))
+    csv_files = filter_labeled_files(csv_files)  # Filtrar solo los archivos "_labeled.csv"
+
     if not csv_files:
-        print(f"No se encontraron archivos CSV en la carpeta: {folder_path}")
+        print(f"No se encontraron archivos '_labeled.csv' en la carpeta: {folder_path}")
         return label_counts
 
-    print(f"Analizando {len(csv_files)} archivos CSV en la carpeta {folder_path}...")
+    print(f"Analizando {len(csv_files)} archivos '_labeled.csv' en la carpeta {folder_path}...")
 
     for csv_file in csv_files:
         try:

@@ -5,9 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"      # Directorio don
 LABELS_DIR="$SCRIPT_DIR/CSVs/Labeling/"                         # Carpeta de archivos etiquetados
 CONFIG_FILE="$SCRIPT_DIR/LabelerV2/labeler_config.json"         # Archivo de configuración
 
-DATA_FILE="$SCRIPT_DIR/CSVs/f/USACH/Ayudantias/Investigacion-Redes/PCAPs/Bot-IoT/Theft/Keylogging/IoT_Keylogging__00003_20180619141524.csv" # Archivo de datos
-OUTPUT_FILE="$SCRIPT_DIR/CSVs/Labeling/Results/Prueba03/IoT_Keylogging__00003_20180619141524_labeled.csv" # Archivo de salida
+#DATA_FILE="$SCRIPT_DIR/CSVs/f/USACH/Ayudantias/Investigacion-Redes/PCAPs/Bot-IoT/Theft/Data_Exfiltration/IoT_Dataset_data_theft__00001_20180618110503.csv" # Archivo de datos
+#OUTPUT_FILE="$SCRIPT_DIR/CSVs/Labeling/Results/Prueba06/IoT_Dataset_data_theft__00001_20180618110503_labeled.csv" # Archivo de salida
 DATASET_TYPE="Bot-IoT"                                          # Tipo de conjunto de datos
+
+# Valores para Keylogging
+DATA_FILE="$SCRIPT_DIR/CSVs/f/USACH/Ayudantias/Investigacion-Redes/PCAPs/Bot-IoT/Theft/Keylogging/IoT_Keylogging__00003_20180619141524.csv" # Archivo de datos
+OUTPUT_FILE="$SCRIPT_DIR/CSVs/Labeling/Results/Prueba06/IoT_Keylogging__00003_20180619141524_labeled.csv" # Archivo de salida
 
 # Activar el entorno virtual
 source "$SCRIPT_DIR/.venv/Scripts/activate"

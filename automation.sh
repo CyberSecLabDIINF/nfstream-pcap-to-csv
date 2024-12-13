@@ -9,6 +9,7 @@ PCAPS_FOLDER_DEFAULT="$SCRIPT_DIR/PCAPs"                        # Carpeta predet
 CSVS_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs"                          # Carpeta predeterminada para archivos CSV
 LABELING_FOLDER_DEFAULT="$SCRIPT_DIR/CSVs/Labeling"             # Carpeta predeterminada para archivos etiquetados
 CONFIG_FILE_DEFAULT="$SCRIPT_DIR/LabelerV2/labeler_config.json" # Archivo de configuración predeterminado
+DATASET_TYPE_DEFAULT="Bot-IoT"                                  # Tipo de conjunto de datos predeterminado
 
 # Function to show help
 show_help() {
@@ -89,7 +90,7 @@ action() {
     echo "Labeling file: $file"
     base_name=$(basename "$file" .pcap)
     labeled_file="${target_dir}/${base_name}_labeled.csv"
-    python3 "$SCRIPT_DIR/LabelerV2/main.py" --target_csv "$target_dir/$name.csv" --labels_dir "$LABELING_FOLDER_DEFAULT" --config_path "$CONFIG_FILE_DEFAULT" --output_file "$labeled_file" --dataset_type "$DATASET_TYPE"
+    python3 "$SCRIPT_DIR/LabelerV2/main.py" --target_csv "$target_dir/$name.csv" --labels_dir "$LABELING_FOLDER_DEFAULT" --config_path "$CONFIG_FILE_DEFAULT" --output_file "$labeled_file" --dataset_type "$DATASET_TYPE_DEFAULT"
 }
 
 # -------------------------------------- SCRIPT --------------------------------------

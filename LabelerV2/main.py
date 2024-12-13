@@ -49,6 +49,7 @@ def main():
     if label_file_path:
         try:
             logger.info("Cargando archivo CSV de etiquetado...")
+            logger.info(f"Archivo de etiquetado: {label_file_path}")
             df_for_tagging = load_csv(label_file_path)
         except Exception as exp:
             logger.error(f"Error durante la carga del archivo CSV de etiquetado: {exp}")

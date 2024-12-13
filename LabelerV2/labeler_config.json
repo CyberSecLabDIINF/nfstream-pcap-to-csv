@@ -23,7 +23,7 @@
                 "servicescan": "service_scan"
             }
         },
-        "Other-Dataset": {
+        "IoT20": {
             "target_csv_key_columns": ["source", "destination"],
             "reference_csv_key_columns": ["ip_src", "ip_dst"],
             "column_mapping": {

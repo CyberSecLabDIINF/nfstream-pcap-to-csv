@@ -65,6 +65,7 @@ def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dict
         df_reference[col] = df_reference[col].astype(str)
         logger.info(f"Columna {col} de df_reference convertida a string.")
 
+
     # Renombrar columnas en df_reference para que coincidan con df_to_label según el mapeo
     logger.info("Renombrando columnas en df_reference según el mapeo definido...")
     df_reference_renamed = df_reference.rename(columns=column_mapping)
@@ -79,6 +80,7 @@ def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dict
         suffixes=('', '_ref')
     )
     logger.info("Merge completado.")
+    logger.info(f"columas en merged_df: {merged_df.columns}")
 
     # Copiar las columnas de referencia en caso de coincidencias
     logger.info("Copiando columnas en caso de coincidencia...")
@@ -131,8 +133,6 @@ def copy_columns(row_to_label, row_reference, columns_to_copy):
     for column in columns_to_copy:
         row_to_label[column] = row_reference[column]
     return row_to_label
-
-
 
 
 
