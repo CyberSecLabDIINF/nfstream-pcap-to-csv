@@ -1,14 +1,15 @@
 {
     "datasets": {
         "Bot-IoT": {
-            "target_csv_key_columns": ["src_ip", "src_port", "dst_ip", "dst_port"],
-            "reference_csv_key_columns": ["saddr", "sport", "daddr", "dport"],
+            "target_csv_key_columns": ["src_ip", "dst_ip", "src_port", "dst_port"],
+            "reference_csv_key_columns": ["saddr", "daddr", "sport", "dport"],
             "column_mapping": {
                 "src_ip":"saddr",
-                "src_port":"sport",
                 "dst_ip":"daddr",
+                "src_port":"sport",
                 "dst_port":"dport"
             },
+            "ports_columns": ["src_port", "dst_port", "sport", "dport"],
             "columns_to_copy": ["attack", "category", "subcategory"],
             "labeling_files": {
                 "data_theft": "data_exfiltration",

@@ -1,4 +1,5 @@
 import pandas as pd
+
 from .logger import setup_logger
 
 logger = setup_logger()
@@ -24,7 +25,7 @@ def validate_config(config_dictionary, dataset_type):
     if not dataset_config:
         raise ValueError(f"No se encontró configuración para el tipo de dataset: {dataset_type}")
 
-    logger.info(f"Configuración cargada para {dataset_type}: {dataset_config}")
+    #logger.info(f"Configuración cargada para {dataset_type}: {dataset_config}")
     return dataset_config
 
 def check_required_columns(df, required_columns, df_name):
@@ -43,7 +44,7 @@ def check_required_columns(df, required_columns, df_name):
     if missing_columns:
         raise ValueError(f"El {df_name} no tiene las columnas esperadas: {missing_columns}")
 
-def convert_columns_to_string(df, columns):
+def clean_data(df, columns):
     """
     Convierte las columnas especificadas a tipo string.
 
@@ -53,20 +54,26 @@ def convert_columns_to_string(df, columns):
     """
     for col in columns:
         df[col] = df[col].astype(str)
-        logger.info(f"Columna {col} convertida a string.")
+        #logger.info(f"Columna {col} convertida a string.")
 
-def clean_column_values(df, columns):
+def clean_column_values(df, columns_config, ports_columns):
     """
-    Limpia los valores de las columnas especificadas, eliminando puntos.
+    Limpia los valores de las columnas especificadas, eliminando puntos y otros.
 
     Args:
         df (pd.DataFrame): DataFrame en el que se limpiarán los valores.
-        columns (list): Lista de columnas a limpiar.
+        columns_config (dict): Configuración de limpieza de columnas.
+        ports_columns (list): Columnas de puertos.
+
     """
-    for col in columns:
-        if col in df.columns:
-            df[col] = df[col].str.replace('.', '', regex=False)
-            logger.info(f"Valores de la columna {col} limpiados de puntos.")
+    for column in columns_config:
+        df[column] = df[column].str.replace(" ", "")
+        if column in ports_columns:
+            df[column] = df[column].str.replace(".0", "")
+        df[column] = df[column].str.replace(".", "")
+        #logger.info(f"Valores de columna {column} limpiados.")
+    return df
+
 
 def rename_columns(df, column_mapping):
     """
@@ -82,27 +89,27 @@ def rename_columns(df, column_mapping):
     logger.info("Renombrando columnas según el mapeo definido...")
     return df.rename(columns=column_mapping)
 
-def merge_dataframes(df_to_label, df_reference, target_columns, reference_columns):
+def operate_dataframes(df_to_label, df_reference, config_dictionary):
     """
-    Realiza un merge entre dos DataFrames utilizando columnas clave.
 
-    Args:
-        df_to_label (pd.DataFrame): DataFrame del archivo CSV que se etiquetará.
-        df_reference (pd.DataFrame): DataFrame del archivo CSV de referencia.
-        target_columns (list): Columnas clave del DataFrame objetivo.
-        reference_columns (list): Columnas clave del DataFrame de referencia.
-
-    Returns:
-        pd.DataFrame: DataFrame combinado.
     """
-    logger.info("Realizando merge entre los DataFrames...")
-    return df_to_label.merge(
-        df_reference,
-        how='left',
-        left_on=target_columns,
-        right_on=reference_columns,
-        suffixes=('', '_ref')
-    )
+    logger.info("Operando los DataFrames...")
+
+    # Seteo de indices para joins
+    #df_to_label.set_index(config_dictionary['target_csv_key_columns'], inplace=True)
+    #df_reference.set_index(config_dictionary['reference_csv_key_columns'], inplace=True)
+
+    # Concatenación de DataFrames
+    #operated_df = pd.concat([df_to_label, df_reference], join='inner', axis=1, verify_integrity=False)
+
+    # Join df_to_label con df_reference por los índices
+    #operated_df = df_to_label.join(df_reference.set_index(config_dictionary['reference_csv_key_columns']), on=config_dictionary['target_csv_key_columns'], how='left')
+
+    # Merge de los DataFrames
+    operated_df = pd.merge(df_to_label, df_reference, how='inner', left_on=config_dictionary['target_csv_key_columns'], right_on=config_dictionary['reference_csv_key_columns'], validate="many_to_many")
+
+    return operated_df
+
 
 def copy_reference_columns(merged_df, columns_to_copy):
     """
@@ -148,26 +155,19 @@ def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dict
     check_required_columns(df_reference, dataset_config['reference_csv_key_columns'], "archivo de referencia")
 
     # Convertir columnas clave a tipo string
-    convert_columns_to_string(df_to_label, dataset_config['target_csv_key_columns'])
-    convert_columns_to_string(df_reference, dataset_config['reference_csv_key_columns'])
+    clean_data(df_to_label, dataset_config['target_csv_key_columns'])
+    clean_data(df_reference, dataset_config['reference_csv_key_columns'])
 
     # Limpiar valores de las columnas clave
-    clean_column_values(df_to_label, dataset_config['target_csv_key_columns'])
-    clean_column_values(df_reference, dataset_config['reference_csv_key_columns'])
+    clean_column_values(df_to_label, dataset_config['target_csv_key_columns'], dataset_config['ports_columns'])
+    clean_column_values(df_reference, dataset_config['reference_csv_key_columns'], dataset_config['ports_columns'])
 
-    # Renombrar columnas del DataFrame de referencia
-    df_reference_renamed = rename_columns(df_reference, dataset_config['column_mapping'])
+    # Operar entre los DataFrames
+    final_df = operate_dataframes(df_to_label, df_reference, dataset_config)
 
-    # Realizar merge entre los DataFrames
-    merged_df = merge_dataframes(
-        df_to_label,
-        df_reference_renamed,
-        dataset_config['target_csv_key_columns'],
-        dataset_config['reference_csv_key_columns']
-    )
-
-    # Copiar columnas en caso de coincidencia
-    final_df = copy_reference_columns(merged_df, dataset_config['columns_to_copy'])
+    # Limpieza de columnas extra
+    final_columns = df_to_label.columns.tolist() + dataset_config['columns_to_copy']
+    final_df = final_df[final_columns]
 
     logger.info("Proceso de etiquetado completado.")
     return final_df
