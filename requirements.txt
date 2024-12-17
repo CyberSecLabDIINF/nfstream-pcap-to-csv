@@ -1,7 +1,8 @@
-nfstream
-argparse
-pandas
+nfstream~=3.1.0
+argparse~=1.4.0
+pandas~=2.2.3
 typing
-pathlib
+pathlib~=1.0.1
 charset_normalizer
-pytest
+pytest~=8.3.3
+tabulate~=0.9.0
