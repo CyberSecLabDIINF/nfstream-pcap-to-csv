@@ -27,12 +27,12 @@ def filter_labeled_files(csv_files):
     """
     return [csv_file for csv_file in csv_files if csv_file.name.endswith("_labeled.csv")]
 
-def analyze_labels_in_file(csv_file):
+def analyze_labels_in_dataframe(df):
     """
-    Analiza un archivo CSV para contar etiquetas únicas en columnas específicas.
+    Analiza un DataFrame para contar etiquetas únicas en columnas específicas.
 
     Args:
-        csv_file (Path): Ruta al archivo CSV.
+        df (pd.DataFrame): DataFrame a analizar.
 
     Returns:
         dict: Diccionario con los conteos por columna.
@@ -43,20 +43,34 @@ def analyze_labels_in_file(csv_file):
         'subcategory': defaultdict(int)
     }
 
-    try:
-        # Leer el CSV detectando delimitador automáticamente
-        df = pd.read_csv(csv_file, sep=None, engine='python', usecols=['attack', 'category', 'subcategory'])
-
-        # Contar valores únicos en las columnas relevantes
-        for column in ['attack', 'category', 'subcategory']:
-            if column in df.columns:
-                counts = df[column].value_counts(dropna=False).to_dict()
-                for label, count in counts.items():
-                    file_counts[column][label] += count
-    except Exception as e:
-        logging.error(f"Error al procesar el archivo {csv_file.name}: {e}")
+    for column in ['attack', 'category', 'subcategory']:
+        if column in df.columns:
+            counts = df[column].value_counts(dropna=False).to_dict()
+            for label, count in counts.items():
+                file_counts[column][label] += count
 
     return file_counts
+
+def analyze_labels_in_file(csv_file):
+    """
+    Analiza un archivo CSV para contar etiquetas únicas en columnas específicas.
+
+    Args:
+        csv_file (Path): Ruta al archivo CSV.
+
+    Returns:
+        dict: Diccionario con los conteos por columna.
+    """
+    try:
+        df = pd.read_csv(csv_file, sep=None, engine='python', usecols=['attack', 'category', 'subcategory'])
+        return analyze_labels_in_dataframe(df)
+    except Exception as e:
+        logging.error(f"Error al procesar el archivo {csv_file.name}: {e}")
+        return {
+            'attack': defaultdict(int),
+            'category': defaultdict(int),
+            'subcategory': defaultdict(int)
+        }
 
 def merge_counts(total_counts, file_counts):
     """
@@ -92,10 +106,7 @@ def create_summary_table(results_by_file):
         total_subcategory = sum(result['counts']['subcategory'].values())
         table.append([file_name, total_attack, total_category, total_subcategory])
 
-    # Ordenar la tabla por la suma total de la columna 'attack' en orden descendente
     table = sorted(table, key=lambda row: row[1], reverse=True)
-
-    # Crear tabla con tabulate
     headers = ["Archivo", "Total Attack", "Total Category", "Total Subcategory"]
     return tabulate(table, headers=headers, tablefmt="grid")
 
@@ -113,64 +124,9 @@ def display_label_counts(label_counts, header):
         for label, count in sorted(labels.items(), key=lambda x: x[1], reverse=True):
             print(f"  - {label}: {count}")
 
-def validate_path(folder_path: Path):
+def analyze_folder(folder_path, show_individual):
     """
-    Valida si la ruta proporcionada existe y es una carpeta válida.
-
-    Args:
-        folder_path (Path): Ruta de la carpeta.
-
-    Returns:
-        bool: True si la ruta es válida, False en caso contrario.
-    """
-    if not folder_path.exists() or not folder_path.is_dir():
-        logging.error(f"La carpeta proporcionada no es válida: {folder_path}")
-        return False
-    return True
-
-def get_csv_files(folder_path: Path):
-    """
-    Obtiene una lista de archivos CSV etiquetados en una carpeta.
-
-    Args:
-        folder_path (Path): Ruta de la carpeta.
-
-    Returns:
-        list[Path]: Lista de rutas a archivos CSV etiquetados.
-    """
-    csv_files = filter_labeled_files(list(folder_path.glob("*.csv")))
-    if not csv_files:
-        logging.info(f"No se encontraron archivos '_labeled.csv' en la carpeta: {folder_path}")
-    return csv_files
-
-def process_csv_file(csv_file: Path, show_individual: bool, total_counts: dict, results_by_file: list):
-    """
-    Procesa un archivo CSV, actualiza los conteos totales y opcionalmente muestra resultados individuales.
-
-    Args:
-        csv_file (Path): Ruta al archivo CSV.
-        show_individual (bool): Si se deben mostrar resultados individuales.
-        total_counts (dict): Conteos totales acumulados.
-        results_by_file (list): Lista con resultados individuales.
-    """
-    logging.info(f"Procesando archivo: {csv_file.name}")
-    file_counts = analyze_labels_in_file(csv_file)
-
-    if show_individual:
-        display_label_counts(file_counts, f"Resultados del archivo '{csv_file.name}'")
-
-    # Agregar los resultados por archivo
-    results_by_file.append({
-        'file': csv_file.name,
-        'counts': file_counts
-    })
-
-    # Actualizar los conteos totales
-    merge_counts(total_counts, file_counts)
-
-def analyze_labels_in_csvs(folder_path: Path, show_individual: bool):
-    """
-    Analiza los archivos CSV en la carpeta para encontrar etiquetas únicas.
+    Analiza los archivos CSV en una carpeta para encontrar etiquetas únicas.
 
     Args:
         folder_path (Path): Ruta de la carpeta con los CSVs.
@@ -186,20 +142,30 @@ def analyze_labels_in_csvs(folder_path: Path, show_individual: bool):
     }
     results_by_file = []
 
-    # Validar la carpeta
-    if not validate_path(folder_path):
+    if not folder_path.exists() or not folder_path.is_dir():
+        logging.error(f"La carpeta proporcionada no es válida: {folder_path}")
         return total_counts, results_by_file
 
-    # Obtener archivos CSV etiquetados
-    csv_files = get_csv_files(folder_path)
+    csv_files = filter_labeled_files(list(folder_path.glob("*.csv")))
     if not csv_files:
+        logging.info(f"No se encontraron archivos '_labeled.csv' en la carpeta: {folder_path}")
         return total_counts, results_by_file
 
     logging.info(f"Analizando {len(csv_files)} archivos '_labeled.csv' en la carpeta {folder_path}...")
 
-    # Procesar cada archivo CSV
     for csv_file in csv_files:
-        process_csv_file(csv_file, show_individual, total_counts, results_by_file)
+        logging.info(f"Procesando archivo: {csv_file.name}")
+        file_counts = analyze_labels_in_file(csv_file)
+
+        if show_individual:
+            display_label_counts(file_counts, f"Resultados del archivo '{csv_file.name}'")
+
+        results_by_file.append({
+            'file': csv_file.name,
+            'counts': file_counts
+        })
+
+        total_counts = merge_counts(total_counts, file_counts)
 
     return total_counts, results_by_file
 
@@ -212,14 +178,12 @@ def main():
     args = parser.parse_args()
 
     folder_path = Path(args.folder).resolve()
-    total_counts, results_by_file = analyze_labels_in_csvs(folder_path, args.show_individual)
+    total_counts, results_by_file = analyze_folder(folder_path, args.show_individual)
 
-    # Crear y mostrar la tabla con resultados por archivo
     print("\nTabla de resultados por archivo:")
     summary_table = create_summary_table(results_by_file)
     print(summary_table)
 
-    # Mostrar el resumen total
     display_label_counts(total_counts, "Resultados Totales")
 
 if __name__ == "__main__":
