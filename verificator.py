@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 from collections import defaultdict
 import logging
-from tabulate import tabulate  # Asegúrate de instalarlo con `pip install tabulate`
+from tabulate import tabulate
 
 
 def setup_logging():

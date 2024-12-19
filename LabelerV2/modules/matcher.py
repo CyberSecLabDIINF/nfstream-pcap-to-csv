@@ -44,7 +44,7 @@ def check_required_columns(df, required_columns, df_name):
     if missing_columns:
         raise ValueError(f"El {df_name} no tiene las columnas esperadas: {missing_columns}")
 
-def clean_data(df, columns):
+def format_data(df, columns):
     """
     Convierte las columnas especificadas a tipo string.
 
@@ -75,20 +75,6 @@ def clean_column_values(df, columns_config, ports_columns):
     return df
 
 
-def rename_columns(df, column_mapping):
-    """
-    Renombra las columnas de un DataFrame según un mapeo dado.
-
-    Args:
-        df (pd.DataFrame): DataFrame a renombrar.
-        column_mapping (dict): Mapeo de columnas.
-
-    Returns:
-        pd.DataFrame: DataFrame con las columnas renombradas.
-    """
-    logger.info("Renombrando columnas según el mapeo definido...")
-    return df.rename(columns=column_mapping)
-
 def operate_dataframes(df_to_label, df_reference, config_dictionary):
     """
 
@@ -110,27 +96,6 @@ def operate_dataframes(df_to_label, df_reference, config_dictionary):
 
     return operated_df
 
-
-def copy_reference_columns(merged_df, columns_to_copy):
-    """
-    Copia las columnas de referencia en caso de coincidencias.
-
-    Args:
-        merged_df (pd.DataFrame): DataFrame combinado después del merge.
-        columns_to_copy (list): Columnas a copiar desde el sufijo "_ref".
-
-    Returns:
-        pd.DataFrame: DataFrame con las columnas copiadas.
-    """
-    logger.info("Copiando columnas en caso de coincidencia...")
-    for col in columns_to_copy:
-        ref_col = col + '_ref'
-        if ref_col in merged_df.columns:
-            logger.info(f"Copiando valores de {ref_col} a {col} si es necesario.")
-            merged_df[col] = merged_df[col].combine_first(merged_df[ref_col])
-            merged_df.drop(columns=[ref_col], inplace=True)
-            logger.info(f"Columna {col} actualizada y columna {ref_col} eliminada.")
-    return merged_df
 
 def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dictionary):
     """
@@ -155,8 +120,8 @@ def match_columns_optimized(df_to_label, df_reference, dataset_type, config_dict
     check_required_columns(df_reference, dataset_config['reference_csv_key_columns'], "archivo de referencia")
 
     # Convertir columnas clave a tipo string
-    clean_data(df_to_label, dataset_config['target_csv_key_columns'])
-    clean_data(df_reference, dataset_config['reference_csv_key_columns'])
+    format_data(df_to_label, dataset_config['target_csv_key_columns'])
+    format_data(df_reference, dataset_config['reference_csv_key_columns'])
 
     # Limpiar valores de las columnas clave
     clean_column_values(df_to_label, dataset_config['target_csv_key_columns'], dataset_config['ports_columns'])
