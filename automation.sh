@@ -83,8 +83,8 @@ action() {
     mkdir -p "$target_dir" || show_error "Failed to create directory structure in CSVs"
 
     # Procesar el archivo y generar el CSV en la subcarpeta apropiada
-    python3 "$SCRIPT_DIR/nfs-preprocesser.py" -i "$file" -o "$target_dir/$name.csv"
-    echo "File processed: $target_dir/$name.csv"
+    #python3 "$SCRIPT_DIR/nfs-preprocesser.py" -i "$file" -o "$target_dir/$name.csv"
+    #echo "File processed: $target_dir/$name.csv"
 
     # Etiquetar el archivo PCAP procesado
     echo "Labeling file: $file"
